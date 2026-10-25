@@ -5,7 +5,6 @@ Uses httpx with timeout and no-redirect policy to prevent SSRF.
 """
 
 import httpx
-from typing import Optional
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -68,10 +67,9 @@ def fetch_ct_subdomains(
                 n = n.strip().lower()
                 if n and n != domain and n.endswith("." + domain):
                     # Strip wildcard prefix
-                    if n.startswith("*."):
-                        n = n[2:]
+                    n = n.removeprefix("*.")
                     subdomains.append(n)
-    except Exception:
+    except Exception:  # noqa: BLE001 - catch-all for JSON parse errors
         logger.warning("ct_sh json parse error", domain=domain)
 
     # Deduplicate while preserving order

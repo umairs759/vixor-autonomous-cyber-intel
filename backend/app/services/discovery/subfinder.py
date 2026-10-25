@@ -7,10 +7,9 @@ Never interpolates user input into shell commands.
 
 import json
 import subprocess
-from typing import Optional
 
 from app.core.logging import get_logger
-from app.services.scope_guard import is_in_scope, validate_hostname
+from app.services.scope_guard import validate_hostname
 
 logger = get_logger("discovery.subfinder")
 
@@ -40,10 +39,12 @@ def run_subfinder(
     # Build allowlisted argument list - no shell interpolation
     cmd = [
         "subfinder",
-        "-d", domain,
+        "-d",
+        domain,
         "-silent",
         "-json",
-        "-timeout", str(timeout_seconds),
+        "-timeout",
+        str(timeout_seconds),
     ]
 
     try:

@@ -6,7 +6,6 @@ Uses subprocess with shell=False and allowlisted arguments.
 
 import json
 import subprocess
-from typing import Optional
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -33,10 +32,12 @@ def probe_host(
 
     cmd = [
         "httpx",
-        "-u", f"https://{hostname}",
+        "-u",
+        f"https://{hostname}",
         "-silent",
         "-json",
-        "-timeout", str(timeout_seconds),
+        "-timeout",
+        str(timeout_seconds),
         "-title",
         "-td",  # technology detection
     ]

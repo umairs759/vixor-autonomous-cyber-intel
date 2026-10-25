@@ -96,15 +96,29 @@ def create_app() -> FastAPI:
         return {"status": "ok", "service": "vixor-api"}
 
     # API routers
+    from app.api.v1 import assets as assets_api
     from app.api.v1 import auth as auth_api
+    from app.api.v1 import correlations as correlations_api
+    from app.api.v1 import dashboard as dashboard_api
     from app.api.v1 import domains as domains_api
+    from app.api.v1 import findings as findings_api
     from app.api.v1 import projects as projects_api
+    from app.api.v1 import reports as reports_api
+    from app.api.v1 import scans as scans_api
+    from app.api.v1 import schedules as schedules_api
     from app.api.v1 import users as users_api
 
     app.include_router(auth_api.router, prefix="/api/v1")
     app.include_router(users_api.router, prefix="/api/v1")
     app.include_router(projects_api.router, prefix="/api/v1")
     app.include_router(domains_api.router, prefix="/api/v1")
+    app.include_router(assets_api.router, prefix="/api/v1")
+    app.include_router(scans_api.router, prefix="/api/v1")
+    app.include_router(findings_api.router, prefix="/api/v1")
+    app.include_router(correlations_api.router, prefix="/api/v1")
+    app.include_router(reports_api.router, prefix="/api/v1")
+    app.include_router(schedules_api.router, prefix="/api/v1")
+    app.include_router(dashboard_api.router, prefix="/api/v1")
 
     return app
 

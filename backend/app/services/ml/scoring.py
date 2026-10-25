@@ -4,16 +4,14 @@ ML risk scoring using trained RandomForest/XGBoost models.
 Falls back to rule-based scoring if model is missing.
 """
 
-import json
 import os
-import pickle
-from typing import Any, Optional
+from typing import Any
 
 import joblib
 import numpy as np
 
 from app.core.logging import get_logger
-from app.services.ml.features import extract_features, feature_names
+from app.services.ml.features import feature_names
 
 logger = get_logger("ml.scoring")
 
@@ -23,7 +21,7 @@ class ScoringService:
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
+        model_path: str | None = None,
         model_version: str = "rf-v1.0.0",
     ):
         self.model_path = model_path
@@ -49,7 +47,7 @@ class ScoringService:
                 path=self.model_path,
                 type=self.model_type,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("model load failed", path=self.model_path, error=str(exc))
             self.model = None
 
@@ -72,9 +70,7 @@ class ScoringService:
         features: dict[str, Any],
     ) -> dict[str, Any]:
         """Score using the trained ML model."""
-        feature_vec = np.array(
-            [[features.get(name, 0.0) for name in feature_names()]]
-        )
+        feature_vec = np.array([[features.get(name, 0.0) for name in feature_names()]])
 
         try:
             # Get prediction (0-1 probability)
@@ -99,7 +95,7 @@ class ScoringService:
                 "shap_values": shap_values,
                 "scored_by": "ml",
             }
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("model scoring failed", error=str(exc))
             return self._score_with_fallback(features)
 
@@ -183,6 +179,6 @@ class ScoringService:
                 shap_dict[name] = round(float(shap_values[0][i]), 4)
 
             return shap_dict
-        except Exception:
+        except Exception:  # noqa: BLE001 - SHAP explainer may not be available
             # Return zero SHAP values if explainer not available
             return {name: 0.0 for name in feature_names()}

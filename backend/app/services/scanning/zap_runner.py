@@ -4,8 +4,6 @@ Runs ZAP in daemon mode with non-destructive policy.
 Uses ZAP API client. Attack strength LOW/MEDIUM, no destructive rules.
 """
 
-from typing import Optional
-
 import httpx
 
 from app.core.logging import get_logger
@@ -31,7 +29,7 @@ class ZapRunner:
         self,
         method: str,
         path: str,
-        params: Optional[dict] = None,
+        params: dict | None = None,
     ) -> dict:
         """Make a request to the ZAP API."""
         params = params or {}
@@ -59,7 +57,6 @@ class ZapRunner:
         - No destructive rules
         - Target validated before scanning
         """
-        from app.services.scope_guard import validate_hostname
 
         from urllib.parse import urlparse
 
@@ -79,7 +76,11 @@ class ZapRunner:
         scan_id = result.get("scan")
 
         if not scan_id:
-            return {"error": "failed to start scan", "target": target_url, "result": result}
+            return {
+                "error": "failed to start scan",
+                "target": target_url,
+                "result": result,
+            }
 
         # Poll for completion
         import time

@@ -4,7 +4,6 @@ Performs DNS A record resolution for subdomains and detects wildcard DNS.
 """
 
 import dns.resolver
-from typing import Optional
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -17,14 +16,14 @@ def resolve_a_records(hostname: str) -> list[str]:
 
     Returns list of IP addresses. Empty list on failure.
     """
-    valid, reason = validate_hostname(hostname)
+    valid, _reason = validate_hostname(hostname)
     if not valid:
         return []
 
     try:
         answers = dns.resolver.resolve(hostname, "A")
         return [str(answer) for answer in answers]
-    except Exception:
+    except Exception:  # noqa: BLE001 - DNS resolution failures are expected
         return []
 
 
@@ -37,9 +36,7 @@ def detect_wildcard(domain: str) -> bool:
     import random
     import string
 
-    random_label = "".join(
-        random.choice(string.ascii_lowercase) for _ in range(16)
-    )
+    random_label = "".join(random.choice(string.ascii_lowercase) for _ in range(16))
     test_host = f"{random_label}.{domain}"
     ips = resolve_a_records(test_host)
     return len(ips) > 0

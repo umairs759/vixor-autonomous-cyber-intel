@@ -5,7 +5,6 @@ Deduplication by fingerprint is handled separately.
 """
 
 import hashlib
-from typing import Any
 
 from app.core.logging import get_logger
 
@@ -16,7 +15,7 @@ def compute_fingerprint(
     source_tool: str,
     title: str,
     hostname: str,
-    port: Optional[int] = None,
+    port: int | None = None,
 ) -> str:
     """Compute a deterministic fingerprint for a finding.
 
@@ -65,24 +64,26 @@ def normalize_nmap(
 
         fingerprint = compute_fingerprint("nmap", title, hostname, int(port))
 
-        findings.append({
-            "fingerprint": fingerprint,
-            "source_tool": "nmap",
-            "title": title,
-            "description": f"Port {port}/{info.get('protocol', 'tcp')} is open running {service}.",
-            "severity_raw": "info",
-            "cvss": None,
-            "cve_ids": [],
-            "evidence": {
-                "port": int(port),
-                "protocol": info.get("protocol", "tcp"),
-                "service": service,
-                "product": product,
-                "version": version,
-                "extrainfo": info.get("extrainfo", ""),
-            },
-            "remediation": "Review if this service is required and properly secured.",
-        })
+        findings.append(
+            {
+                "fingerprint": fingerprint,
+                "source_tool": "nmap",
+                "title": title,
+                "description": f"Port {port}/{info.get('protocol', 'tcp')} is open running {service}.",
+                "severity_raw": "info",
+                "cvss": None,
+                "cve_ids": [],
+                "evidence": {
+                    "port": int(port),
+                    "protocol": info.get("protocol", "tcp"),
+                    "service": service,
+                    "product": product,
+                    "version": version,
+                    "extrainfo": info.get("extrainfo", ""),
+                },
+                "remediation": "Review if this service is required and properly secured.",
+            }
+        )
 
     return findings
 
@@ -98,25 +99,29 @@ def normalize_zap(
         title = alert.get("alert", "ZAP finding")
         fingerprint = compute_fingerprint("zap", title, hostname)
 
-        findings.append({
-            "fingerprint": fingerprint,
-            "source_tool": "zap",
-            "title": title,
-            "description": alert.get("description", ""),
-            "severity_raw": alert.get("risk", "info").lower(),
-            "cvss": None,
-            "cve_ids": [],
-            "evidence": {
-                "url": alert.get("url", ""),
-                "param": alert.get("param", ""),
-                "attack": alert.get("attack", ""),
-                "evidence": alert.get("evidence", ""),
-                "reference": alert.get("reference", ""),
-                "cwe_id": alert.get("cweid", ""),
-                "wasc_id": alert.get("wascid", ""),
-            },
-            "remediation": alert.get("solution", "Review and remediate according to best practices."),
-        })
+        findings.append(
+            {
+                "fingerprint": fingerprint,
+                "source_tool": "zap",
+                "title": title,
+                "description": alert.get("description", ""),
+                "severity_raw": alert.get("risk", "info").lower(),
+                "cvss": None,
+                "cve_ids": [],
+                "evidence": {
+                    "url": alert.get("url", ""),
+                    "param": alert.get("param", ""),
+                    "attack": alert.get("attack", ""),
+                    "evidence": alert.get("evidence", ""),
+                    "reference": alert.get("reference", ""),
+                    "cwe_id": alert.get("cweid", ""),
+                    "wasc_id": alert.get("wascid", ""),
+                },
+                "remediation": alert.get(
+                    "solution", "Review and remediate according to best practices."
+                ),
+            }
+        )
 
     return findings
 
@@ -135,20 +140,24 @@ def normalize_nuclei(
         title = f"{name} ({template_id})"
         fingerprint = compute_fingerprint("nuclei", title, hostname)
 
-        findings.append({
-            "fingerprint": fingerprint,
-            "source_tool": "nuclei",
-            "title": title,
-            "description": result.get("info", {}).get("description", ""),
-            "severity_raw": severity,
-            "cvss": result.get("info", {}).get("cvss_score"),
-            "cve_ids": result.get("info", {}).get("cve", []),
-            "evidence": {
-                "matched_at": result.get("matched-at", ""),
-                "template": template_id,
-                "extracted_results": result.get("extracted-results", []),
-            },
-            "remediation": result.get("info", {}).get("remediation", "Review and remediate according to best practices."),
-        })
+        findings.append(
+            {
+                "fingerprint": fingerprint,
+                "source_tool": "nuclei",
+                "title": title,
+                "description": result.get("info", {}).get("description", ""),
+                "severity_raw": severity,
+                "cvss": result.get("info", {}).get("cvss_score"),
+                "cve_ids": result.get("info", {}).get("cve", []),
+                "evidence": {
+                    "matched_at": result.get("matched-at", ""),
+                    "template": template_id,
+                    "extracted_results": result.get("extracted-results", []),
+                },
+                "remediation": result.get("info", {}).get(
+                    "remediation", "Review and remediate according to best practices."
+                ),
+            }
+        )
 
     return findings

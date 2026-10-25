@@ -6,18 +6,18 @@ scope_guard -> Nmap -> ZAP -> Nuclei -> normalization -> dedupe.
 Handles timeouts, retries, partial-failure handling, and per-project concurrency.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from app.core.logging import get_logger
-from app.services.scope_guard import is_in_scope
 from app.services.scanning.nmap_runner import run_nmap
-from app.services.scanning.nuclei_runner import run_nuclei
 from app.services.scanning.normalizer import (
     normalize_nmap,
     normalize_nuclei,
     normalize_zap,
 )
+from app.services.scanning.nuclei_runner import run_nuclei
 from app.services.scanning.zap_runner import ZapRunner
+from app.services.scope_guard import is_in_scope
 
 logger = get_logger("scanning.orchestrator")
 
@@ -27,7 +27,7 @@ class ScanOrchestrator:
 
     def __init__(
         self,
-        zap_runner: Optional[ZapRunner] = None,
+        zap_runner: ZapRunner | None = None,
         timeout_seconds: int = 1800,
     ):
         self.zap_runner = zap_runner
@@ -55,12 +55,8 @@ class ScanOrchestrator:
         }
 
         # Step 1: scope_guard enforcement
-        from datetime import datetime, UTC
-
-        from app.models.domain import Domain
-
         # Create a minimal domain object for scope check
-        from datetime import timezone
+        from datetime import UTC
 
         if domain_verified and verified_at:
             if verified_at.tzinfo is None:
@@ -100,7 +96,7 @@ class ScanOrchestrator:
                     hostname,
                 )
                 result["findings"].extend(nmap_findings)
-        except Exception as exc:  # noqa: BLE001 - capture and continue
+        except Exception as exc:
             logger.exception("nmap error", hostname=hostname, error=str(exc))
             result["errors"].append(f"nmap: {str(exc)[:200]}")
             result["tools"]["nmap"] = {"error": str(exc)[:200]}
@@ -117,7 +113,7 @@ class ScanOrchestrator:
                         hostname,
                     )
                     result["findings"].extend(zap_findings)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.exception("zap error", hostname=hostname, error=str(exc))
                 result["errors"].append(f"zap: {str(exc)[:200]}")
                 result["tools"]["zap"] = {"error": str(exc)[:200]}
@@ -134,8 +130,10 @@ class ScanOrchestrator:
                 nuclei_findings = normalize_nuclei(nuclei_results, hostname)
                 result["findings"].extend(nuclei_findings)
             else:
-                result["errors"].append(f"nuclei: {nuclei_results[0].get('error', 'unknown')}")
-        except Exception as exc:  # noqa: BLE001
+                result["errors"].append(
+                    f"nuclei: {nuclei_results[0].get('error', 'unknown')}"
+                )
+        except Exception as exc:
             logger.exception("nuclei error", hostname=hostname, error=str(exc))
             result["errors"].append(f"nuclei: {str(exc)[:200]}")
             result["tools"]["nuclei"] = {"error": str(exc)[:200]}

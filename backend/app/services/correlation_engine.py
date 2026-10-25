@@ -8,7 +8,6 @@ from typing import Any
 
 from app.core.logging import get_logger
 from app.models.finding import Finding
-from app.models.asset import Asset
 
 logger = get_logger("ml.correlation")
 
@@ -55,14 +54,16 @@ class CorrelationEngine:
             narrative = self._generate_narrative(group, combined_score)
             finding_ids = [f.id for f in group]
 
-            correlations.append({
-                "scan_id": scan_id,
-                "asset_id": asset_id,
-                "title": group[0].title,
-                "narrative": narrative,
-                "combined_score": combined_score,
-                "finding_ids": finding_ids,
-            })
+            correlations.append(
+                {
+                    "scan_id": scan_id,
+                    "asset_id": asset_id,
+                    "title": group[0].title,
+                    "narrative": narrative,
+                    "combined_score": combined_score,
+                    "finding_ids": finding_ids,
+                }
+            )
 
         return correlations
 
@@ -163,10 +164,13 @@ class CorrelationEngine:
 
         titles_str = ", ".join(titles)
         risk_class = (
-            "critical" if combined_score >= 75 else
-            "high" if combined_score >= 50 else
-            "medium" if combined_score >= 25 else
-            "low"
+            "critical"
+            if combined_score >= 75
+            else "high"
+            if combined_score >= 50
+            else "medium"
+            if combined_score >= 25
+            else "low"
         )
 
         return (

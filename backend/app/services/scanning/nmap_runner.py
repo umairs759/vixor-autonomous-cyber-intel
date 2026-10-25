@@ -6,7 +6,6 @@ No exploit scripts. Uses subprocess with shell=False and allowlisted args.
 
 import json
 import subprocess
-from typing import Optional
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -37,11 +36,15 @@ def run_nmap(
     cmd = [
         "nmap",
         "-sV",
-        "--script", "safe",
-        "-oJ", "-",  # JSON output to stdout
+        "--script",
+        "safe",
+        "-oJ",
+        "-",  # JSON output to stdout
         "-T4",
-        "--max-retries", "2",
-        "--host-timeout", f"{timeout_seconds}s",
+        "--max-retries",
+        "2",
+        "--host-timeout",
+        f"{timeout_seconds}s",
         hostname,
     ]
 

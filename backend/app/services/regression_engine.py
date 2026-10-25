@@ -3,13 +3,10 @@
 Classifies findings per scan cycle as NEW, RECURRING, REINTRODUCED, or RESOLVED.
 """
 
-from typing import Any, Optional
-
 from app.core.logging import get_logger
-from app.models.domain import Domain
-from app.models.finding_history import FindingHistory, HistoryStatus
-from app.models.finding import Finding
 from app.models.asset import Asset
+from app.models.finding import Finding
+from app.models.finding_history import FindingHistory, HistoryStatus
 
 logger = get_logger("ml.regression")
 
@@ -25,7 +22,7 @@ class RegressionEngine:
         fingerprint: str,
         asset: Asset,
         scan_id: str,
-        previous_scan_id: Optional[str] = None,
+        previous_scan_id: str | None = None,
     ) -> HistoryStatus:
         """Classify a finding's regression status.
 
@@ -80,28 +77,19 @@ class RegressionEngine:
     def classify_scan_findings(
         self,
         scan_id: str,
-        previous_scan_id: Optional[str] = None,
+        previous_scan_id: str | None = None,
     ) -> list[dict]:
         """Classify all findings in a scan cycle.
 
         Returns list of classification results.
         """
-        from app.models.finding import Finding
         from app.models.asset import Asset
 
-        findings = (
-            self.db.query(Finding)
-            .filter(Finding.scan_id == scan_id)
-            .all()
-        )
+        findings = self.db.query(Finding).filter(Finding.scan_id == scan_id).all()
 
         results: list[dict] = []
         for finding in findings:
-            asset = (
-                self.db.query(Asset)
-                .filter(Asset.id == finding.asset_id)
-                .first()
-            )
+            asset = self.db.query(Asset).filter(Asset.id == finding.asset_id).first()
             if not asset:
                 continue
 
@@ -112,12 +100,14 @@ class RegressionEngine:
                 previous_scan_id=previous_scan_id,
             )
 
-            results.append({
-                "finding_id": finding.id,
-                "fingerprint": finding.fingerprint,
-                "asset_id": finding.asset_id,
-                "hostname": asset.hostname,
-                "status": status.value,
-            })
+            results.append(
+                {
+                    "finding_id": finding.id,
+                    "fingerprint": finding.fingerprint,
+                    "asset_id": finding.asset_id,
+                    "hostname": asset.hostname,
+                    "status": status.value,
+                }
+            )
 
         return results

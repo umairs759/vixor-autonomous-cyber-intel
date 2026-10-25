@@ -12,7 +12,7 @@ logger = get_logger("ml.features")
 
 def extract_features(
     finding: dict,
-    finding_score: Optional[dict] = None,
+    finding_score: dict | None = None,
     asset_sensitivity: float = 0.5,
     recurrence_count: int = 0,
     is_in_cisa_kev: bool = False,
@@ -38,19 +38,19 @@ def extract_features(
     """
     # Service port risk mapping
     port_risk_map = {
-        "21": 0.6,   # FTP
-        "22": 0.3,   # SSH
-        "23": 0.8,   # Telnet
-        "25": 0.5,   # SMTP
-        "53": 0.4,   # DNS
-        "80": 0.4,   # HTTP
+        "21": 0.6,  # FTP
+        "22": 0.3,  # SSH
+        "23": 0.8,  # Telnet
+        "25": 0.5,  # SMTP
+        "53": 0.4,  # DNS
+        "80": 0.4,  # HTTP
         "110": 0.5,  # POP3
         "443": 0.5,  # HTTPS
-        "3389": 0.7, # RDP
-        "5432": 0.6, # PostgreSQL
-        "3306": 0.6, # MySQL
-        "6379": 0.7, # Redis
-        "27017": 0.7,# MongoDB
+        "3389": 0.7,  # RDP
+        "5432": 0.6,  # PostgreSQL
+        "3306": 0.6,  # MySQL
+        "6379": 0.7,  # Redis
+        "27017": 0.7,  # MongoDB
     }
 
     evidence = finding.get("evidence", {})

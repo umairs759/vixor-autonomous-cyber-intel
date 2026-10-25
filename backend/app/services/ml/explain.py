@@ -107,8 +107,7 @@ def generate_narrative(
         narrative = f"Risk is {risk_score:.0f}/100 mainly because {parts[0]}."
     elif len(parts) == 2:
         narrative = (
-            f"Risk is {risk_score:.0f}/100 mainly because "
-            f"{parts[0]} and {parts[1]}."
+            f"Risk is {risk_score:.0f}/100 mainly because {parts[0]} and {parts[1]}."
         )
     else:
         narrative = (

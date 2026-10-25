@@ -7,7 +7,6 @@ JSONL output parsing.
 
 import json
 import subprocess
-from typing import Optional
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -38,7 +37,6 @@ def run_nuclei(
 
     parsed = urlparse(target_url)
     hostname = parsed.hostname or ""
-    from app.services.scope_guard import validate_hostname
 
     valid, reason = validate_hostname(hostname)
     if not valid:
@@ -46,12 +44,16 @@ def run_nuclei(
 
     cmd = [
         "nuclei",
-        "-u", target_url,
+        "-u",
+        target_url,
         "-jsonl",
         "-silent",
-        "-timeout", str(timeout_seconds),
-        "-retries", "1",
-        "-exclude-tags", NUCLEI_EXCLUDED_TAGS,
+        "-timeout",
+        str(timeout_seconds),
+        "-retries",
+        "1",
+        "-exclude-tags",
+        NUCLEI_EXCLUDED_TAGS,
     ]
 
     try:
