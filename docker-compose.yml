@@ -1,1 +1,378 @@
-# VIXOR — Docker Compose scaffold (to be completed in T-003)
+# VIXOR — Docker Compose
+# Services: api, worker, beat, web, postgres, redis, zap, scanner-tools
+# Only web and api are exposed through the reverse proxy; postgres, redis, zap internal only.
+
+name: vixor
+
+services:
+  # ---------------------------------------------------------------------------
+  # Reverse proxy (Caddy) — TLS termination, security headers, HTTP->HTTPS
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    networks:
+      - vixor-frontend
+    labels:
+      - "com.vixor.tier=edge"
+
+  # ---------------------------------------------------------------------------
+  # Backend API (FastAPI)
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg://vixor:change_me@postgres:5432/vixor
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret_key
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - COOKIE_SECURE=true
+      - CORS_ALLOWED_ORIGINS=https://localhost:3000
+      - ADMIN_EMAIL=admin@example.com
+      - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
+      - ZAP_API_KEY_FILE=/run/secrets/zap_api_key
+      - ZAP_API_URL=http://zap:8090
+      - SCAN_TOOL_TIMEOUT_SECONDS=1800
+      - MAX_CONCURRENT_SCANS_PER_PROJECT=2
+      - REVERIFY_INTERVAL_DAYS=7
+      - ALLOW_PRIVATE_IP_SCANNING=false
+      - NEXT_PUBLIC_API_BASE_URL=https://localhost:8000/api/v1
+    secrets:
+      - jwt_secret_key
+      - admin_initial_password
+      - zap_api_key
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - vixor-backend
+      - vixor-frontend
+    labels:
+      - "com.vixor.tier=application"
+
+  # ---------------------------------------------------------------------------
+  # Celery worker — async scan pipeline
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg://vixor:change_me@postgres:5432/vixor
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret_key
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - COOKIE_SECURE=true
+      - CORS_ALLOWED_ORIGINS=https://localhost:3000
+      - ADMIN_EMAIL=admin@example.com
+      - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
+      - ZAP_API_KEY_FILE=/run/secrets/zap_api_key
+      - ZAP_API_URL=http://zap:8090
+      - SCAN_TOOL_TIMEOUT_SECONDS=1800
+      - MAX_CONCURRENT_SCANS_PER_PROJECT=2
+      - REVERIFY_INTERVAL_DAYS=7
+      - ALLOW_PRIVATE_IP_SCANNING=false
+      - NEXT_PUBLIC_API_BASE_URL=https://localhost:8000/api/v1
+    secrets:
+      - jwt_secret_key
+      - admin_initial_password
+      - zap_api_key
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - vixor-backend
+      - vixor-scanner
+    labels:
+      - "com.vixor.tier=application"
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat — scan scheduling
+  # ---------------------------------------------------------------------------
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg://vixor:change_me@postgres:5432/vixor
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_FILE=/run/secrets/jwt_secret_key
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - COOKIE_SECURE=true
+      - CORS_ALLOWED_ORIGINS=https://localhost:3000
+      - ADMIN_EMAIL=admin@example.com
+      - ADMIN_INITIAL_PASSWORD_FILE=/run/secrets/admin_initial_password
+      - ZAP_API_KEY_FILE=/run/secrets/zap_api_key
+      - ZAP_API_URL=http://zap:8090
+      - SCAN_TOOL_TIMEOUT_SECONDS=1800
+      - MAX_CONCURRENT_SCANS_PER_PROJECT=2
+      - REVERIFY_INTERVAL_DAYS=7
+      - ALLOW_PRIVATE_IP_SCANNING=false
+      - NEXT_PUBLIC_API_BASE_URL=https://localhost:8000/api/v1
+    secrets:
+      - jwt_secret_key
+      - admin_initial_password
+      - zap_api_key
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    networks:
+      - vixor-backend
+    labels:
+      - "com.vixor.tier=application"
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Next.js 14 App Router)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=https://localhost:8000/api/v1
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - vixor-frontend
+    labels:
+      - "com.vixor.tier=application"
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 15 — internal only, no published port
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=vixor
+      - POSTGRES_USER=vixor
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vixor -d vixor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vixor-backend
+    labels:
+      - "com.vixor.tier=infrastructure"
+
+  # ---------------------------------------------------------------------------
+  # Redis 7 — internal only, no published port
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly yes
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.125"
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - redis_data:/data
+    networks:
+      - vixor-backend
+    labels:
+      - "com.vixor.tier=infrastructure"
+
+  # ---------------------------------------------------------------------------
+  # OWASP ZAP daemon — internal only, no published port
+  # ---------------------------------------------------------------------------
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:weekly
+    restart: unless-stopped
+    command: ["-daemon", "-host", "0.0.0.0", "-port", "8090", "-config", "api.disablekey=false"]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/JSON/core/view/version/"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    networks:
+      - vixor-scanner
+    labels:
+      - "com.vixor.tier=infrastructure"
+
+  # ---------------------------------------------------------------------------
+  # Scanner tools (subfinder, httpx, nmap, nuclei) — isolated network
+  # ---------------------------------------------------------------------------
+  scanner-tools:
+    image: projectdiscovery/nuclei:latest
+    restart: unless-stopped
+    command: ["sleep", "infinity"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - vixor-scanner
+    labels:
+      - "com.vixor.tier=infrastructure"
+
+  # ---------------------------------------------------------------------------
+  # Scanner-sidecar (runs subfinder, httpx, nmap from worker)
+  # ---------------------------------------------------------------------------
+  scanner-sidecar:
+    build:
+      context: ./docker
+      dockerfile: scanner-tools.Dockerfile
+    restart: unless-stopped
+    command: ["sleep", "infinity"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - vixor-scanner
+    labels:
+      - "com.vixor.tier=infrastructure"
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  vixor-frontend:
+    driver: bridge
+    internal: false
+  vixor-backend:
+    driver: bridge
+    internal: true
+  vixor-scanner:
+    driver: bridge
+    internal: true
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+# ---------------------------------------------------------------------------
+# Secrets (defined here; values injected via .env or Docker secrets at runtime)
+# ---------------------------------------------------------------------------
+secrets:
+  jwt_secret_key:
+    file: ./secrets/jwt_secret_key
+  admin_initial_password:
+    file: ./secrets/admin_initial_password
+  zap_api_key:
+    file: ./secrets/zap_api_key
+  postgres_password:
+    file: ./secrets/postgres_password

@@ -1,0 +1,42 @@
+# VIXOR — Caddy reverse proxy
+# TLS termination, HTTP->HTTPS redirect, security headers
+
+{
+    admin localhost:2019
+    log {
+        output stdout
+        format json
+    }
+}
+
+# HTTP -> HTTPS redirect
+:80 {
+    redir https://{host}{uri} 308
+}
+
+# API backend
+api.localhost:443, localhost:443 {
+    reverse_proxy api:8000
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+    # CSP without unsafe-inline
+    header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:3000 wss://localhost:3000; frame-ancestors 'none';"
+}
+
+# Frontend web
+web.localhost:443 {
+    reverse_proxy web:3000
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://localhost:8000 wss://localhost:8000 ws://localhost:8000; frame-ancestors 'none';"
+}
