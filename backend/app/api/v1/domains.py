@@ -7,14 +7,11 @@ GET /domains/{id} — get domain details (ownership-checked).
 All endpoints enforce ownership checks (IDOR protection).
 """
 
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.rbac import RequireViewer
 from app.deps import get_db
-from app.models.domain import DomainStatus
 from app.redis import get_redis
 from app.schemas.domain import (
     DomainResponse,
@@ -23,6 +20,7 @@ from app.schemas.domain import (
 )
 from app.services.auth_service import AuthService
 from app.services.domain_service import DomainService
+from app.services.domain_verification import perform_verification
 
 router = APIRouter(prefix="/projects", tags=["domains"])
 
@@ -149,40 +147,34 @@ async def verify_domain(
             detail="Domain not found.",
         )
 
-    # TODO (T-019): Implement actual DNS TXT / .well-known file verification
-    # For now, mark as verified with the provided method
-    try:
-        from app.models.domain import VerificationMethod
+    # Validate verification method
+    from app.models.domain import VerificationMethod
 
-        method = VerificationMethod(verify_data.verification_method)
+    try:
+        VerificationMethod(verify_data.verification_method)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification method. Use 'dns_txt' or 'file'.",
         )
 
-    domain.verification_method = method
-    domain.status = DomainStatus.verified
-    domain.verified_at = datetime.now(UTC)
-
-    auth.db.commit()
-    auth.db.refresh(domain)
-
-    from app.services.audit_service import write_audit_log
-
-    write_audit_log(
-        auth.db,
-        action="domain_verified",
-        resource_type="domain",
-        resource_id=domain.id,
+    # Perform actual verification (DNS TXT or .well-known file)
+    success, reason = await perform_verification(
+        domain=domain,
+        db=auth.db,
         user_id=current_user.get("user_id"),
         ip=client_ip,
         user_agent=user_agent,
-        metadata={
-            "root_domain": domain.root_domain,
-            "verification_method": method.value,
-        },
     )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=reason or "Verification failed.",
+        )
+
+    # Refresh domain from DB after perform_verification updated it
+    auth.db.refresh(domain)
 
     return DomainResponse(
         id=domain.id,
