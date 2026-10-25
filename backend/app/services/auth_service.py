@@ -140,6 +140,11 @@ class AuthService:
             metadata={"email": email, "reason": "user_not_found"},
         )
 
+    @staticmethod
+    def hash_password_static(password: str) -> str:
+        """Hash a password using argon2id (static access for API endpoints)."""
+        return hash_password(password)
+
     def create_tokens(self, user: User) -> tuple[str, str]:
         """Create access token and refresh token JTI. Returns (access_token, refresh_jti)."""
         access_jti = str(uuid.uuid4())
