@@ -1,8 +1,8 @@
 # VIXOR — Memory
 
 ## Active State
-Current task: T-016
-Last completed: T-015
+Current task: Security 1
+Last completed: T-016
 
 ## Required Environment Variables
 See security/secrets.md
