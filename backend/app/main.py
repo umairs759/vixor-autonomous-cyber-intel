@@ -97,10 +97,12 @@ def create_app() -> FastAPI:
 
     # API routers
     from app.api.v1 import auth as auth_api
+    from app.api.v1 import projects as projects_api
     from app.api.v1 import users as users_api
 
     app.include_router(auth_api.router, prefix="/api/v1")
     app.include_router(users_api.router, prefix="/api/v1")
+    app.include_router(projects_api.router, prefix="/api/v1")
 
     return app
 
