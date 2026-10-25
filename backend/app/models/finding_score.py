@@ -7,7 +7,7 @@ scored_by distinguishes ML-scored vs fallback rule-based.
 import enum
 from typing import Any
 
-from sqlalchemy import Enum, Float, String, Text
+from sqlalchemy import Enum, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,8 +30,7 @@ class FindingScore(Base):
     __tablename__ = "finding_scores"
 
     finding_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False),
-        primary_key=True,
+        UUID(as_uuid=False), ForeignKey("findings.id"), primary_key=True
     )
     risk_score: Mapped[float] = mapped_column(Float, nullable=False)
     risk_class: Mapped[RiskClass] = mapped_column(
@@ -51,9 +50,11 @@ class FindingScore(Base):
         nullable=False,
     )
 
-    finding: Mapped["Finding"] = relationship(  # noqa: F821
-        "Finding", back_populates="score"
-    )
+    finding: Mapped["Finding"] = relationship("Finding", back_populates="score")
 
     def __repr__(self) -> str:
         return f"<FindingScore(finding_id={self.finding_id}, risk_score={self.risk_score})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.finding import Finding

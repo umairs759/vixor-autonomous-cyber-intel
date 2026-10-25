@@ -6,7 +6,7 @@ before each scheduled run.
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,7 +20,7 @@ class ScanSchedule(Base, TimestampMixin):
         UUID(as_uuid=False), primary_key=True, default=generate_uuid
     )
     domain_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("domains.id"), nullable=False, index=True
     )
     cron: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -28,7 +28,11 @@ class ScanSchedule(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
-    domain: Mapped["Domain"] = relationship("Domain", back_populates="schedules")  # noqa: F821
+    domain: Mapped["Domain"] = relationship("Domain", back_populates="schedules")
 
     def __repr__(self) -> str:
         return f"<ScanSchedule(id={self.id}, domain_id={self.domain_id}, cron={self.cron})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.domain import Domain

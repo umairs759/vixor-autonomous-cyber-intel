@@ -6,7 +6,7 @@ No UPDATE/DELETE grants on this table in production.
 
 from typing import Any, Optional
 
-from sqlalchemy import String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,9 +20,7 @@ class AuditLog(Base, TimestampMixin):
         UUID(as_uuid=False), primary_key=True, default=generate_uuid
     )
     user_id: Mapped[str | None] = mapped_column(
-        UUID(as_uuid=False),
-        nullable=True,
-        index=True,
+        UUID(as_uuid=False), ForeignKey("users.id"), nullable=True, index=True
     )
     action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     resource_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)

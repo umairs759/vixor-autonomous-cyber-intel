@@ -7,7 +7,7 @@ Status: unverified -> verified -> suspended (on re-verification failure).
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, String, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,7 +32,7 @@ class Domain(Base, TimestampMixin):
         UUID(as_uuid=False), primary_key=True, default=generate_uuid
     )
     project_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("projects.id"), nullable=False, index=True
     )
     root_domain: Mapped[str] = mapped_column(String(253), nullable=False, index=True)
     verification_token: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -57,16 +57,23 @@ class Domain(Base, TimestampMixin):
         UniqueConstraint("project_id", "root_domain", name="uq_project_root_domain"),
     )
 
-    project: Mapped["Project"] = relationship("Project", back_populates="domains")  # noqa: F821
-    assets: Mapped[list["Asset"]] = relationship(  # noqa: F821
+    project: Mapped["Project"] = relationship("Project", back_populates="domains")
+    assets: Mapped[list["Asset"]] = relationship(
         "Asset", back_populates="domain", cascade="all, delete-orphan"
     )
-    scans: Mapped[list["Scan"]] = relationship(  # noqa: F821
+    scans: Mapped[list["Scan"]] = relationship(
         "Scan", back_populates="domain", cascade="all, delete-orphan"
     )
-    schedules: Mapped[list["ScanSchedule"]] = relationship(  # noqa: F821
+    schedules: Mapped[list["ScanSchedule"]] = relationship(
         "ScanSchedule", back_populates="domain", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
         return f"<Domain(id={self.id}, root_domain={self.root_domain}, status={self.status})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.asset import Asset
+from app.models.project import Project
+from app.models.scan import Scan
+from app.models.schedule import ScanSchedule

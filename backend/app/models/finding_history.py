@@ -6,7 +6,7 @@ NEW, RECURRING, REINTRODUCED, RESOLVED.
 
 import enum
 
-from sqlalchemy import Enum, String
+from sqlalchemy import Enum, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,18 +28,23 @@ class FindingHistory(Base, TimestampMixin):
     )
     fingerprint: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     asset_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("assets.id"), nullable=False, index=True
     )
     scan_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("scans.id"), nullable=False, index=True
     )
     status: Mapped[HistoryStatus] = mapped_column(
         Enum(HistoryStatus, values_callable=lambda obj: [e.value for e in obj]),
         nullable=False,
     )
 
-    asset: Mapped["Asset"] = relationship("Asset")  # noqa: F821
-    scan: Mapped["Scan"] = relationship("Scan")  # noqa: F821
+    asset: Mapped["Asset"] = relationship("Asset")
+    scan: Mapped["Scan"] = relationship("Scan")
 
     def __repr__(self) -> str:
         return f"<FindingHistory(fingerprint={self.fingerprint}, status={self.status})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.asset import Asset
+from app.models.scan import Scan

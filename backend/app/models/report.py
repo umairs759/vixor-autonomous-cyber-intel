@@ -4,7 +4,7 @@ PDF report generated from scan data. Download is ownership-checked
 with an unguessable UUID4 ID.
 """
 
-from sqlalchemy import String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,17 +18,22 @@ class Report(Base, TimestampMixin):
         UUID(as_uuid=False), primary_key=True, default=generate_uuid
     )
     scan_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("scans.id"), nullable=False, index=True
     )
     generated_by: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, index=True
     )
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
 
-    scan: Mapped["Scan"] = relationship("Scan", back_populates="report")  # noqa: F821
-    generated_by_user: Mapped["User"] = relationship(  # noqa: F821
+    scan: Mapped["Scan"] = relationship("Scan", back_populates="report")
+    generated_by_user: Mapped["User"] = relationship(
         "User", back_populates="generated_reports"
     )
 
     def __repr__(self) -> str:
         return f"<Report(id={self.id}, scan_id={self.scan_id})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.scan import Scan
+from app.models.user import User

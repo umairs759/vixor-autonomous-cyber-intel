@@ -42,18 +42,25 @@ class User(Base, TimestampMixin):
     )
 
     # Relationships
-    owned_projects: Mapped[list["Project"]] = relationship(  # noqa: F821
+    owned_projects: Mapped[list["Project"]] = relationship(
         "Project", back_populates="owner", cascade="all, delete-orphan"
     )
-    triggered_scans: Mapped[list["Scan"]] = relationship(  # noqa: F821
+    triggered_scans: Mapped[list["Scan"]] = relationship(
         "Scan", back_populates="triggered_by_user"
     )
-    generated_reports: Mapped[list["Report"]] = relationship(  # noqa: F821
+    generated_reports: Mapped[list["Report"]] = relationship(
         "Report", back_populates="generated_by_user"
     )
-    audit_entries: Mapped[list["AuditLog"]] = relationship(  # noqa: F821
+    audit_entries: Mapped[list["AuditLog"]] = relationship(
         "AuditLog", back_populates="user", foreign_keys="[AuditLog.user_id]"
     )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.audit_log import AuditLog
+from app.models.project import Project
+from app.models.report import Report
+from app.models.scan import Scan

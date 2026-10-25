@@ -6,7 +6,7 @@ A unified finding normalized from scanner output. Deduplicated by fingerprint.
 import enum
 from typing import Any, Optional
 
-from sqlalchemy import Enum, String, Text
+from sqlalchemy import Enum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,10 +26,10 @@ class Finding(Base, TimestampMixin):
         UUID(as_uuid=False), primary_key=True, default=generate_uuid
     )
     asset_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("assets.id"), nullable=False, index=True
     )
     scan_id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), nullable=False, index=True
+        UUID(as_uuid=False), ForeignKey("scans.id"), nullable=False, index=True
     )
     fingerprint: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     source_tool: Mapped[SourceTool] = mapped_column(
@@ -46,9 +46,9 @@ class Finding(Base, TimestampMixin):
     )
     remediation: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    asset: Mapped["Asset"] = relationship("Asset", back_populates="findings")  # noqa: F821
-    scan: Mapped["Scan"] = relationship("Scan", back_populates="findings")  # noqa: F821
-    score: Mapped[Optional["FindingScore"]] = relationship(  # noqa: F821
+    asset: Mapped["Asset"] = relationship("Asset", back_populates="findings")
+    scan: Mapped["Scan"] = relationship("Scan", back_populates="findings")
+    score: Mapped[Optional["FindingScore"]] = relationship(
         "FindingScore",
         back_populates="finding",
         uselist=False,
@@ -57,3 +57,9 @@ class Finding(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Finding(id={self.id}, title={self.title}, tool={self.source_tool})>"
+
+
+# Import all forward-referenced models to resolve relationship string names
+from app.models.asset import Asset
+from app.models.finding_score import FindingScore
+from app.models.scan import Scan
