@@ -48,8 +48,16 @@ US-10 As an Analyst/Management user, I download a PDF report.
   AC: includes executive summary, risk distribution, top findings with explanations, remediation guidance, regression trends.
 US-11 As an Analyst, I schedule recurring scans (daily/weekly).
   AC: schedule persists; Celery Beat triggers; ownership re-verified before each scheduled run.
+US-12 As an Analyst or Management user, I view the dashboard with real-time scan progress and security posture trends.
+  AC: dashboard shows summary stats, severity distribution, trend lines, and live scan progress; management users see a read-only executive summary view.
 
-## 6. Edge Cases
+## 6. Limitations (LI-1 to LI-4)
+- LI-1: Only authorized, ownership-verified domains may be scanned (DNS TXT at _vixor-verify.<domain> or /.well-known/vixor-verification.txt). Scans are blocked until verified_at is set and within the re-verification window.
+- LI-2: No exploit execution or destructive testing, ever. Nuclei excludes tags dos, intrusive, fuzz, bruteforce; ZAP uses a non-destructive policy; Nmap uses safe options only.
+- LI-3: Scanning is limited to web apps, APIs, and subdomain infrastructure. Mobile apps, network-internal (non-internet-facing) targets, and unauthorized third-party targets are out of scope.
+- LI-4: Per-tool timeouts, per-project scan concurrency capped at 2, global rate limits, and container CPU/memory caps apply to all scanning operations.
+
+## 7. Edge Cases
 - Domain token removed after verification: re-verification every 7 days; failure suspends scanning.
 - Wildcard DNS returns IPs for any subdomain: detect and dedupe.
 - Subdomain resolves to third-party/CDN/shared-hosting IP: flagged OUT_OF_SCOPE, never scanned.

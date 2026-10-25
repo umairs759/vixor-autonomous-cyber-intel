@@ -1,0 +1,91 @@
+# VIXOR — .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.mypy_cache/
+.ruff_cache/
+.pyright
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.npm
+.yarn-integrity
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Docker
+.dockerignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+Desktop.ini
+
+# ML artifacts (gitignored per ARCHITECTURE.md)
+ml/artifacts/*
+!ml/artifacts/.gitkeep
+
+# Reports
+backend/reports/
+*.pdf
+
+# Logs
+*.log
+logs/
+
+# Alembic
+backend/alembic/versions/*.py
+!backend/alembic/versions/__init__.py
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+
+# gitleaks
+.gitleaks.toml
