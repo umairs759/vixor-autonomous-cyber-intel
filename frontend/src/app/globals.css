@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* DESIGN.md tokens */
+    --background: 7 9 13;        /* #07090D */
+    --surface: 14 19 27;         /* #0E131B */
+    --elevated: 21 28 39;        /* #151C27 */
+    --border: 31 41 55;          /* #1F2937 */
+    --text: 230 237 243;         /* #E6EDF3 */
+    --muted: 139 152 169;        /* #8B98A9 */
+    --primary: 34 211 238;       /* #22D3EE electric cyan */
+    --accent: 245 184 61;        /* #F5B83D amber */
+    --critical: 244 63 94;       /* #F43F5E */
+    --high: 249 115 22;          /* #F97316 */
+    --medium: 245 184 61;        /* #F5B83D */
+    --low: 56 189 248;           /* #38BDF8 */
+    --info: 148 163 184;         /* #94A3B8 */
+  }
+
+  .dark {
+    background-color: rgb(var(--background));
+    color: rgb(var(--text));
+  }
+
+  body {
+    background-color: rgb(var(--background));
+    color: rgb(var(--text));
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  }
+
+  .font-mono {
+    font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+  }
+}
+
+@layer components {
+  .card {
+    @apply border border-border/50 bg-surface rounded-lg p-4;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-primary/90 px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
+  }
+
+  .input {
+    @apply flex w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .label {
+    @apply text-sm font-medium text-muted mb-1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
