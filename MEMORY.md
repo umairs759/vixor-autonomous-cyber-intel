@@ -1,8 +1,28 @@
 # VIXOR — Memory
 
+## Completed Tasks
+- T-001: Git repo, .gitignore, .editorconfig, pre-commit
+- T-002: Backend skeleton (FastAPI, config, logging, /health)
+- T-003: docker-compose with all services
+- T-004: Alembic setup, base migration, pytest skeleton
+- T-005: Next.js 14 App Router skeleton
+- T-011 to T-014: Database models, migrations, seed script
+- T-015: Auth endpoints (login, refresh, logout)
+- T-016: Users admin endpoints + audit-logs
+- T-017: Projects CRUD with ownership checks
+- T-018: Domain registration with random token
+- T-019: Domain verification (DNS TXT + .well-known file)
+- T-020: scope_guard service + 51 unit tests
+- Security 1: Refresh token rotation, reuse detection, per-IP rate limiting
+
 ## Active State
-Current task: T-020
-Last completed: T-019
+Current task: Security 2 (IDOR prevention & row-level data ownership)
+
+## Known Issues
+- None
+
+## Technical Debt Log
+- None yet
 
 ## Required Environment Variables
 See security/secrets.md
