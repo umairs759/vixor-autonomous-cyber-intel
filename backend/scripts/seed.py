@@ -10,7 +10,7 @@ Never run in production without explicit opt-in.
 import os
 import sys
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher
 from sqlalchemy import create_engine
@@ -18,30 +18,30 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.config import get_settings  # noqa: E402
-from app.models.base import Base  # noqa: E402
+import app.models.asset
+import app.models.audit_log
+import app.models.correlation
+import app.models.domain
+import app.models.finding
+import app.models.finding_history
+import app.models.finding_score
+import app.models.project
+import app.models.report
+import app.models.scan
+import app.models.scan_asset
+import app.models.schedule
 import app.models.user  # noqa: F401
-import app.models.audit_log  # noqa: F401
-import app.models.project  # noqa: F401
-import app.models.domain  # noqa: F401
-import app.models.asset  # noqa: F401
-import app.models.scan  # noqa: F401
-import app.models.scan_asset  # noqa: F401
-import app.models.finding  # noqa: F401
-import app.models.finding_score  # noqa: F401
-import app.models.finding_history  # noqa: F401
-import app.models.correlation  # noqa: F401
-import app.models.report  # noqa: F401
-import app.models.schedule  # noqa: F401
-from app.models.user import User, UserRole  # noqa: E402
-from app.models.project import Project  # noqa: E402
-from app.models.domain import Domain, DomainStatus, VerificationMethod  # noqa: E402
-from app.models.asset import Asset, ScopeStatus  # noqa: E402
-from app.models.scan import Scan, ScanStatus  # noqa: E402
-from app.models.scan_asset import ScanAsset  # noqa: E402
-from app.models.finding import Finding, SourceTool  # noqa: E402
-from app.models.finding_score import FindingScore, RiskClass, ScoredBy  # noqa: E402
-from app.models.audit_log import AuditLog  # noqa: E402
+from app.config import get_settings
+from app.models.asset import Asset, ScopeStatus
+from app.models.base import Base
+from app.models.domain import Domain, DomainStatus, VerificationMethod
+from app.models.finding import Finding, SourceTool
+from app.models.finding_history import FindingHistory, HistoryStatus
+from app.models.finding_score import FindingScore, RiskClass, ScoredBy
+from app.models.project import Project
+from app.models.scan import Scan, ScanStatus
+from app.models.scan_asset import ScanAsset
+from app.models.user import User, UserRole
 
 ph = PasswordHasher()
 
@@ -66,7 +66,7 @@ def seed_admin(db: Session) -> User:
         is_active=True,
         failed_attempts=0,
         locked_until=None,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(admin)
     db.commit()
@@ -86,7 +86,7 @@ def seed_demo(db: Session, admin: User) -> None:
         owner_id=admin.id,
         name="Demo Project",
         description="Fixture project for local development",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(project)
     db.commit()
@@ -99,8 +99,8 @@ def seed_demo(db: Session, admin: User) -> None:
         verification_token="demo-token-" + str(uuid.uuid4()),
         verification_method=VerificationMethod.dns_txt,
         status=DomainStatus.verified,
-        verified_at=datetime.now(timezone.utc),
-        created_at=datetime.now(timezone.utc),
+        verified_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
     db.add(domain)
     db.commit()
@@ -116,8 +116,8 @@ def seed_demo(db: Session, admin: User) -> None:
         scope_reason=None,
         technologies=["nginx", "PHP 7.4"],
         sensitivity_score=0.7,
-        first_seen=datetime.now(timezone.utc) - timedelta(days=7),
-        last_seen=datetime.now(timezone.utc),
+        first_seen=datetime.now(UTC) - timedelta(days=7),
+        last_seen=datetime.now(UTC),
     )
     db.add(asset)
     db.commit()
@@ -129,8 +129,8 @@ def seed_demo(db: Session, admin: User) -> None:
         domain_id=domain.id,
         triggered_by=admin.id,
         status=ScanStatus.completed,
-        started_at=datetime.now(timezone.utc) - timedelta(hours=1),
-        finished_at=datetime.now(timezone.utc) - timedelta(minutes=50),
+        started_at=datetime.now(UTC) - timedelta(hours=1),
+        finished_at=datetime.now(UTC) - timedelta(minutes=50),
         error_summary=None,
     )
     db.add(scan)
@@ -157,7 +157,10 @@ def seed_demo(db: Session, admin: User) -> None:
         severity_raw="high",
         cvss=7.5,
         cve_ids=["CVE-2024-1234"],
-        evidence={"matched_at": "http://app.example.local/", "template": "php-version-detect"},
+        evidence={
+            "matched_at": "http://app.example.local/",
+            "template": "php-version-detect",
+        },
         remediation="Upgrade PHP to a supported version.",
     )
     db.add(finding)
@@ -181,7 +184,7 @@ def seed_demo(db: Session, admin: User) -> None:
         fingerprint=finding.fingerprint,
         asset_id=asset.id,
         scan_id=scan.id,
-        status=__import__("app.models.finding_history", fromlist=["HistoryStatus"]).HistoryStatus.new,
+        status=HistoryStatus.new,
     )
     db.add(history)
     db.commit()

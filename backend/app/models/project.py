@@ -3,10 +3,9 @@
 A project groups domains, assets, scans, and findings. Owned by a user.
 """
 
-from typing import Optional
 from sqlalchemy import String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -21,13 +20,13 @@ class Project(Base, TimestampMixin):
         UUID(as_uuid=False), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    owner: Mapped["User"] = relationship("User", back_populates="owned_projects")
-    domains: Mapped[list["Domain"]] = relationship(
+    owner: Mapped["User"] = relationship("User", back_populates="owned_projects")  # noqa: F821
+    domains: Mapped[list["Domain"]] = relationship(  # noqa: F821
         "Domain", back_populates="project", cascade="all, delete-orphan"
     )
-    scans: Mapped[list["Scan"]] = relationship(
+    scans: Mapped[list["Scan"]] = relationship(  # noqa: F821
         "Scan", back_populates="project", cascade="all, delete-orphan"
     )
 

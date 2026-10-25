@@ -41,8 +41,16 @@ def get_logger(name: str) -> structlog.BoundLogger:
 
 # Redact sensitive fields from any log event
 _SENSITIVE_KEYS = {
-    "password", "password_hash", "token", "access_token", "refresh_token",
-    "jwt_secret", "secret_key", "api_key", "authorization", "cookie",
+    "password",
+    "password_hash",
+    "token",
+    "access_token",
+    "refresh_token",
+    "jwt_secret",
+    "secret_key",
+    "api_key",
+    "authorization",
+    "cookie",
 }
 
 

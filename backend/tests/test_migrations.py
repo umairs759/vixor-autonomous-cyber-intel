@@ -3,76 +3,125 @@
 Uses an in-memory SQLite database. SQLite does not support all PostgreSQL
 features (JSONB, native ENUM), so these tests verify migration structure
 and application order rather than full PostgreSQL semantics.
+
+Alembic commands are invoked via subprocess to avoid import shadowing
+between our backend/alembic/ package directory and the installed alembic
+package.
 """
 
 import os
-from alembic import command
-from alembic.config import Config
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import Session
-
+import subprocess
 import sys
+import tempfile
+
+from sqlalchemy import create_engine, inspect
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.models.base import Base  # noqa: E402
+import app.models.asset
+import app.models.audit_log
+import app.models.correlation
+import app.models.domain
+import app.models.finding
+import app.models.finding_history
+import app.models.finding_score
+import app.models.project
+import app.models.report
+import app.models.scan
+import app.models.scan_asset
+import app.models.schedule
+
+# Import all model modules so they register on Base.metadata
+import app.models.user  # noqa: F401
+from app.models.base import Base
 
 
-def _alembic_cfg() -> Config:
-    cfg = Config("backend/alembic.ini")
-    cfg.set_main_option("script_location", "backend/alembic")
-    return cfg
+def _run_alembic(database_url: str, *args: str) -> subprocess.CompletedProcess:
+    """Run an alembic CLI command with the given database URL."""
+    env = dict(os.environ)
+    env["DATABASE_URL"] = database_url
+    return subprocess.run(
+        [sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", *args],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
 
 
-def test_migrations_apply_and_rollback(tmp_path):
+def test_migrations_apply_and_rollback():
     """Migrations apply head -> then roll back to base cleanly."""
-    db_path = tmp_path / "test_migrations.db"
-    engine = create_engine(f"sqlite:///{db_path}")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = os.path.join(tmpdir, "test_migrations.db")
+        database_url = f"sqlite:///{db_path}"
 
-    cfg = _alembic_cfg()
-    cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+        # Apply all migrations to head
+        result = _run_alembic(database_url, "upgrade", "head")
+        assert result.returncode == 0, f"Alembic upgrade failed:\n{result.stderr}"
 
-    # Apply all migrations to head
-    command.upgrade(cfg, "head")
+        # Verify expected tables exist
+        engine = create_engine(database_url)
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        expected = {
+            "users",
+            "audit_logs",
+            "projects",
+            "domains",
+            "assets",
+            "scans",
+            "scan_assets",
+            "findings",
+            "finding_scores",
+            "finding_history",
+            "correlations",
+            "reports",
+            "scan_schedules",
+            "alembic_version",
+        }
+        missing = expected - table_names
+        assert not missing, f"Missing tables after migration: {missing}"
 
-    # Verify expected tables exist
-    inspector = inspect(engine)
-    table_names = set(inspector.get_table_names())
-    expected = {
-        "users", "audit_logs", "projects", "domains",
-        "assets", "scans", "scan_assets", "findings",
-        "finding_scores", "finding_history", "correlations",
-        "reports", "scan_schedules", "alembic_version",
-    }
-    missing = expected - table_names
-    assert not missing, f"Missing tables after migration: {missing}"
+        # Verify key columns exist
+        columns = {c["name"] for c in inspector.get_columns("users")}
+        assert {"id", "email", "password_hash", "role", "is_active"} <= columns
 
-    # Verify key columns exist
-    columns = {c["name"] for c in inspector.get_columns("users")}
-    assert {"id", "email", "password_hash", "role", "is_active"} <= columns
+        columns = {c["name"] for c in inspector.get_columns("domains")}
+        assert {"id", "project_id", "root_domain", "status"} <= columns
 
-    columns = {c["name"] for c in inspector.get_columns("domains")}
-    assert {"id", "project_id", "root_domain", "status"} <= columns
+        columns = {c["name"] for c in inspector.get_columns("findings")}
+        assert {"id", "fingerprint", "source_tool"} <= columns
 
-    columns = {c["name"] for c in inspector.get_columns("findings")}
-    assert {"id", "fingerprint", "source_tool"} <= columns
+        # Roll back to base
+        result = _run_alembic(database_url, "downgrade", "base")
+        assert result.returncode == 0, f"Alembic downgrade failed:\n{result.stderr}"
 
-    # Roll back to base
-    command.downgrade(cfg, "base")
+        # After downgrade to base, only alembic_version should remain
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        app_tables = table_names - {"alembic_version"}
+        assert not app_tables, f"Tables remain after downgrade: {app_tables}"
 
-    # After downgrade to base, only alembic_version should remain
-    inspector = inspect(engine)
-    table_names = set(inspector.get_table_names())
-    app_tables = table_names - {"alembic_version"}
-    assert not app_tables, f"Tables remain after downgrade: {app_tables}"
+        # Dispose engine to release SQLite file handle before cleanup
+        engine.dispose()
 
 
-def test_metadata_matches_tables(tmp_path):
+def test_metadata_matches_tables():
     """SQLAlchemy Base metadata defines all expected tables."""
     expected = {
-        "users", "audit_logs", "projects", "domains",
-        "assets", "scans", "scan_assets", "findings",
-        "finding_scores", "finding_history", "correlations",
-        "reports", "scan_schedules",
+        "users",
+        "audit_logs",
+        "projects",
+        "domains",
+        "assets",
+        "scans",
+        "scan_assets",
+        "findings",
+        "finding_scores",
+        "finding_history",
+        "correlations",
+        "reports",
+        "scan_schedules",
     }
     defined = set(Base.metadata.tables.keys())
     missing = expected - defined

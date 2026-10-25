@@ -4,9 +4,9 @@ PDF report generated from scan data. Download is ownership-checked
 with an unguessable UUID4 ID.
 """
 
-from sqlalchemy import String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -25,8 +25,8 @@ class Report(Base, TimestampMixin):
     )
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
 
-    scan: Mapped["Scan"] = relationship("Scan", back_populates="report")
-    generated_by_user: Mapped["User"] = relationship(
+    scan: Mapped["Scan"] = relationship("Scan", back_populates="report")  # noqa: F821
+    generated_by_user: Mapped["User"] = relationship(  # noqa: F821
         "User", back_populates="generated_reports"
     )
 

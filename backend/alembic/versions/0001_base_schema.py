@@ -1,7 +1,7 @@
 """Base schema
 
 Revision ID: 0001_base_schema
-Revises: 
+Revises:
 Create Date: 2026-10-25 00:00:00.000000
 
 Base migration establishing the VIXOR database schema. Tables are added
@@ -10,8 +10,6 @@ etc.). This revision creates the alembic_version table and is a no-op
 for application tables.
 
 """
-
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "0001_base_schema"

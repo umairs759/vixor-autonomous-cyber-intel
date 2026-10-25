@@ -4,16 +4,17 @@ Creates the FastAPI app, configures structured logging, CORS, security
 headers, and registers API routers. Health check is available at /health.
 """
 
+import time
+import uuid
+
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-import structlog
-import time
-import uuid
 
 from app.config import get_settings
-from app.core.logging import configure_logging, get_logger, redact_event
+from app.core.logging import configure_logging, get_logger
 
 configure_logging()
 logger = get_logger("main")
@@ -29,7 +30,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         start = time.time()
         try:
             response = await call_next(request)
-        except Exception as exc:  # noqa: BLE001 - log and return generic 500
+        except Exception as exc:
             logger.exception("unhandled_request_error", error=str(exc))
             return JSONResponse(
                 status_code=500,
@@ -57,10 +58,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
         # HSTS only when served over HTTPS
         if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
         return response
 
 
@@ -91,7 +96,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "service": "vixor-api"}
 
     # API routers are registered here as modules are built (T-015+)
-    # from app.api.v1 import auth, users, projects  # noqa: E501 (TBD)
+    # from app.api.v1 import auth, users, projects
     # app.include_router(auth.router, prefix="/api/v1")
 
     return app

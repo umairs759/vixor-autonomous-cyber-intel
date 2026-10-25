@@ -4,12 +4,12 @@ Role-based access control: admin, analyst, viewer.
 Account lockout: failed_attempts counter + locked_until timestamp.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy import String, DateTime, Integer, Enum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
 import enum
+from datetime import datetime
+
+from sqlalchemy import DateTime, Enum, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -26,7 +26,9 @@ class User(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=False), primary_key=True, default=generate_uuid
     )
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, values_callable=lambda obj: [e.value for e in obj]),
@@ -35,21 +37,21 @@ class User(Base, TimestampMixin):
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    locked_until: Mapped[Optional[datetime]] = mapped_column(
+    locked_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
     # Relationships
-    owned_projects: Mapped[list["Project"]] = relationship(
+    owned_projects: Mapped[list["Project"]] = relationship(  # noqa: F821
         "Project", back_populates="owner", cascade="all, delete-orphan"
     )
-    triggered_scans: Mapped[list["Scan"]] = relationship(
+    triggered_scans: Mapped[list["Scan"]] = relationship(  # noqa: F821
         "Scan", back_populates="triggered_by_user"
     )
-    generated_reports: Mapped[list["Report"]] = relationship(
+    generated_reports: Mapped[list["Report"]] = relationship(  # noqa: F821
         "Report", back_populates="generated_by_user"
     )
-    audit_entries: Mapped[list["AuditLog"]] = relationship(
+    audit_entries: Mapped[list["AuditLog"]] = relationship(  # noqa: F821
         "AuditLog", back_populates="user", foreign_keys="[AuditLog.user_id]"
     )
 

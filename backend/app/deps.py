@@ -9,11 +9,11 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.config import get_settings, Settings
+from app.config import Settings, get_settings
 from app.core.logging import get_logger
 
 logger = get_logger("deps")
@@ -68,7 +68,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-        return {"user_id": user_id, "role": payload.get("role"), "jti": payload.get("jti")}
+        return {
+            "user_id": user_id,
+            "role": payload.get("role"),
+            "jti": payload.get("jti"),
+        }
     except JWTError:
         logger.warning("invalid_access_token_attempt")
         raise credentials_exception

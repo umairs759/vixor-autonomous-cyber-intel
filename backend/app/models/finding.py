@@ -3,11 +3,12 @@
 A unified finding normalized from scanner output. Deduplicated by fingerprint.
 """
 
-from typing import Any, Optional
-from sqlalchemy import String, Text, Enum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 import enum
+from typing import Any, Optional
+
+from sqlalchemy import Enum, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -38,15 +39,20 @@ class Finding(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     severity_raw: Mapped[str] = mapped_column(String(50), nullable=False)
-    cvss: Mapped[Optional[float]] = mapped_column(nullable=True)
+    cvss: Mapped[float | None] = mapped_column(nullable=True)
     cve_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
-    evidence: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
-    remediation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    evidence: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
+    remediation: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    asset: Mapped["Asset"] = relationship("Asset", back_populates="findings")
-    scan: Mapped["Scan"] = relationship("Scan", back_populates="findings")
-    score: Mapped[Optional["FindingScore"]] = relationship(
-        "FindingScore", back_populates="finding", uselist=False, cascade="all, delete-orphan"
+    asset: Mapped["Asset"] = relationship("Asset", back_populates="findings")  # noqa: F821
+    scan: Mapped["Scan"] = relationship("Scan", back_populates="findings")  # noqa: F821
+    score: Mapped[Optional["FindingScore"]] = relationship(  # noqa: F821
+        "FindingScore",
+        back_populates="finding",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

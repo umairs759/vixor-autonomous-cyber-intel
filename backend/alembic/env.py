@@ -4,32 +4,34 @@ Uses the application SQLAlchemy metadata and DATABASE_URL from settings.
 Runs migrations in online mode by default.
 """
 
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
 import os
 import sys
+from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Ensure the backend package is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.config import get_settings  # noqa: E402
-from app.models.base import Base  # noqa: E402
+import app.models.asset
+import app.models.audit_log
+import app.models.correlation
+import app.models.domain
+import app.models.finding
+import app.models.finding_history
+import app.models.finding_score
+import app.models.project
+import app.models.report
+import app.models.scan
+import app.models.scan_asset
+import app.models.schedule
 
 # Import all models so they are registered on Base.metadata
 import app.models.user  # noqa: F401
-import app.models.audit_log  # noqa: F401
-import app.models.project  # noqa: F401
-import app.models.domain  # noqa: F401
-import app.models.asset  # noqa: F401
-import app.models.scan  # noqa: F401
-import app.models.scan_asset  # noqa: F401
-import app.models.finding  # noqa: F401
-import app.models.finding_score  # noqa: F401
-import app.models.finding_history  # noqa: F401
-import app.models.correlation  # noqa: F401
-import app.models.report  # noqa: F401
-import app.models.schedule  # noqa: F401
+from app.config import get_settings
+from app.models.base import Base
 
 # Alembic Config object
 config = context.config

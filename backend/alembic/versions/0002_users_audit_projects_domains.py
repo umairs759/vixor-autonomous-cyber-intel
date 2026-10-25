@@ -7,17 +7,18 @@ Create Date: 2026-10-25 00:00:00.000000
 T-011: Models and migrations for users, audit_logs, projects, domains.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision: str = "0002_users_audit_projects_domains"
-down_revision: Union[str, None] = "0001_base_schema"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0001_base_schema"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -52,12 +53,10 @@ def upgrade() -> None:
         sa.Column("resource_id", postgresql.UUID(as_uuid=False), nullable=True),
         sa.Column("ip", sa.String(length=45), nullable=True),
         sa.Column("user_agent", sa.String(length=512), nullable=True),
-        sa.Column("metadata", postgresql.JSONB(as_text_type=True), nullable=True),
+        sa.Column("event_metadata", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
     )
     op.create_index(op.f("ix_audit_logs_created_at"), "audit_logs", ["created_at"])
     op.create_index(op.f("ix_audit_logs_action"), "audit_logs", ["action"])
@@ -72,9 +71,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["owner_id"], ["users.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["owner_id"], ["users.id"], ondelete="CASCADE"),
     )
     op.create_index(op.f("ix_projects_owner_id"), "projects", ["owner_id"])
 
@@ -100,12 +97,8 @@ def upgrade() -> None:
         sa.Column("last_reverified_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["project_id"], ["projects.id"], ondelete="CASCADE"
-        ),
-        sa.UniqueConstraint(
-            "project_id", "root_domain", name="uq_project_root_domain"
-        ),
+        sa.ForeignKeyConstraint(["project_id"], ["projects.id"], ondelete="CASCADE"),
+        sa.UniqueConstraint("project_id", "root_domain", name="uq_project_root_domain"),
     )
     op.create_index(op.f("ix_domains_project_id"), "domains", ["project_id"])
     op.create_index(op.f("ix_domains_root_domain"), "domains", ["root_domain"])
@@ -117,7 +110,9 @@ def downgrade() -> None:
     op.drop_table("projects")
     op.drop_table("audit_logs")
     op.drop_table("users")
-    # Drop enum types
-    op.execute("DROP TYPE IF EXISTS domainstatus")
-    op.execute("DROP TYPE IF EXISTS verificationmethod")
-    op.execute("DROP TYPE IF EXISTS userrole")
+    # Drop enum types (PostgreSQL only)
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS domainstatus")
+        op.execute("DROP TYPE IF EXISTS verificationmethod")
+        op.execute("DROP TYPE IF EXISTS userrole")

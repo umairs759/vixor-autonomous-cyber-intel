@@ -4,12 +4,12 @@ Represents a verified root domain owned by a project.
 Status: unverified -> verified -> suspended (on re-verification failure).
 """
 
-from datetime import datetime
-from typing import Optional
-from sqlalchemy import String, DateTime, Enum, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
 import enum
+from datetime import datetime
+
+from sqlalchemy import DateTime, Enum, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -46,10 +46,10 @@ class Domain(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    verified_at: Mapped[Optional[datetime]] = mapped_column(
+    verified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    last_reverified_at: Mapped[Optional[datetime]] = mapped_column(
+    last_reverified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -57,14 +57,14 @@ class Domain(Base, TimestampMixin):
         UniqueConstraint("project_id", "root_domain", name="uq_project_root_domain"),
     )
 
-    project: Mapped["Project"] = relationship("Project", back_populates="domains")
-    assets: Mapped[list["Asset"]] = relationship(
+    project: Mapped["Project"] = relationship("Project", back_populates="domains")  # noqa: F821
+    assets: Mapped[list["Asset"]] = relationship(  # noqa: F821
         "Asset", back_populates="domain", cascade="all, delete-orphan"
     )
-    scans: Mapped[list["Scan"]] = relationship(
+    scans: Mapped[list["Scan"]] = relationship(  # noqa: F821
         "Scan", back_populates="domain", cascade="all, delete-orphan"
     )
-    schedules: Mapped[list["ScanSchedule"]] = relationship(
+    schedules: Mapped[list["ScanSchedule"]] = relationship(  # noqa: F821
         "ScanSchedule", back_populates="domain", cascade="all, delete-orphan"
     )
 

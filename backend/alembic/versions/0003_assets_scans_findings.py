@@ -7,17 +7,18 @@ Create Date: 2026-10-25 00:00:00.000000
 T-012: Models and migrations for assets, scans, scan_assets, findings.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision: str = "0003_assets_scans_findings"
-down_revision: Union[str, None] = "0002_users_audit_projects_domains"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0002_users_audit_projects_domains"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -27,7 +28,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=False), nullable=False),
         sa.Column("domain_id", postgresql.UUID(as_uuid=False), nullable=False),
         sa.Column("hostname", sa.String(length=253), nullable=False),
-        sa.Column("ips", postgresql.JSONB(as_text_type=True), nullable=True),
+        sa.Column("ips", sa.JSON(), nullable=True),
         sa.Column("is_live", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column(
             "scope_status",
@@ -36,17 +37,13 @@ def upgrade() -> None:
             server_default="out_of_scope",
         ),
         sa.Column("scope_reason", sa.String(length=255), nullable=True),
-        sa.Column(
-            "technologies", postgresql.JSONB(as_text_type=True), nullable=True
-        ),
+        sa.Column("technologies", sa.JSON(), nullable=True),
         sa.Column("sensitivity_score", sa.Float(), nullable=True),
         sa.Column("first_seen", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_seen", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["domain_id"], ["domains.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["domain_id"], ["domains.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("domain_id", "hostname", name="uq_domain_hostname"),
     )
     op.create_index(op.f("ix_assets_domain_id"), "assets", ["domain_id"])
@@ -62,7 +59,9 @@ def upgrade() -> None:
         sa.Column("triggered_by", postgresql.UUID(as_uuid=False), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("queued", "running", "partial", "completed", "failed", name="scanstatus"),
+            sa.Enum(
+                "queued", "running", "partial", "completed", "failed", name="scanstatus"
+            ),
             nullable=False,
             server_default="queued",
         ),
@@ -71,15 +70,9 @@ def upgrade() -> None:
         sa.Column("error_summary", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["project_id"], ["projects.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["domain_id"], ["domains.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["triggered_by"], ["users.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["project_id"], ["projects.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["domain_id"], ["domains.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["triggered_by"], ["users.id"], ondelete="CASCADE"),
     )
     op.create_index(op.f("ix_scans_project_id"), "scans", ["project_id"])
     op.create_index(op.f("ix_scans_domain_id"), "scans", ["domain_id"])
@@ -92,14 +85,12 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=False), nullable=False),
         sa.Column("scan_id", postgresql.UUID(as_uuid=False), nullable=False),
         sa.Column("asset_id", postgresql.UUID(as_uuid=False), nullable=False),
-        sa.Column("status", sa.String(length=50), nullable=False, server_default="pending"),
+        sa.Column(
+            "status", sa.String(length=50), nullable=False, server_default="pending"
+        ),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["scan_id"], ["scans.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["asset_id"], ["assets.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["scan_id"], ["scans.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["asset_id"], ["assets.id"], ondelete="CASCADE"),
     )
     op.create_index(op.f("ix_scan_assets_scan_id"), "scan_assets", ["scan_id"])
     op.create_index(op.f("ix_scan_assets_asset_id"), "scan_assets", ["asset_id"])
@@ -120,17 +111,13 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("severity_raw", sa.String(length=50), nullable=False),
         sa.Column("cvss", sa.Float(), nullable=True),
-        sa.Column("cve_ids", postgresql.JSONB(as_text_type=True), nullable=False, server_default="[]"),
-        sa.Column("evidence", postgresql.JSONB(as_text_type=True), nullable=False, server_default="{}"),
+        sa.Column("cve_ids", sa.JSON(), nullable=False, server_default="[]"),
+        sa.Column("evidence", sa.JSON(), nullable=False, server_default="{}"),
         sa.Column("remediation", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(
-            ["asset_id"], ["assets.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["scan_id"], ["scans.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["asset_id"], ["assets.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["scan_id"], ["scans.id"], ondelete="CASCADE"),
     )
     op.create_index(op.f("ix_findings_asset_id"), "findings", ["asset_id"])
     op.create_index(op.f("ix_findings_scan_id"), "findings", ["scan_id"])
@@ -142,6 +129,9 @@ def downgrade() -> None:
     op.drop_table("scan_assets")
     op.drop_table("scans")
     op.drop_table("assets")
-    op.execute("DROP TYPE IF EXISTS sourcetool")
-    op.execute("DROP TYPE IF EXISTS scanstatus")
-    op.execute("DROP TYPE IF EXISTS scopestatus")
+    # Drop enum types (PostgreSQL only)
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute("DROP TYPE IF EXISTS sourcetool")
+        op.execute("DROP TYPE IF EXISTS scanstatus")
+        op.execute("DROP TYPE IF EXISTS scopestatus")

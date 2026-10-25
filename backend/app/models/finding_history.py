@@ -4,10 +4,11 @@ Tracks regression status of a finding across scan cycles:
 NEW, RECURRING, REINTRODUCED, RESOLVED.
 """
 
-from sqlalchemy import String, Enum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
 import enum
+
+from sqlalchemy import Enum, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
 
@@ -37,8 +38,8 @@ class FindingHistory(Base, TimestampMixin):
         nullable=False,
     )
 
-    asset: Mapped["Asset"] = relationship("Asset")
-    scan: Mapped["Scan"] = relationship("Scan")
+    asset: Mapped["Asset"] = relationship("Asset")  # noqa: F821
+    scan: Mapped["Scan"] = relationship("Scan")  # noqa: F821
 
     def __repr__(self) -> str:
         return f"<FindingHistory(fingerprint={self.fingerprint}, status={self.status})>"
