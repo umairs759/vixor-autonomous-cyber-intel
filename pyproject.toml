@@ -1,0 +1,25 @@
+[project]
+name = "vixor"
+version = "0.1.0"
+description = "AI-assisted continuous vulnerability intelligence platform"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["backend"]
+
+[tool.ruff.lint]
+# B008 is incompatible with FastAPI's Depends() dependency injection pattern
+ignore = ["B008"]
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true

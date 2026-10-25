@@ -95,9 +95,10 @@ def create_app() -> FastAPI:
     async def health():
         return {"status": "ok", "service": "vixor-api"}
 
-    # API routers are registered here as modules are built (T-015+)
-    # from app.api.v1 import auth, users, projects
-    # app.include_router(auth.router, prefix="/api/v1")
+    # API routers
+    from app.api.v1 import auth as auth_api
+
+    app.include_router(auth_api.router, prefix="/api/v1")
 
     return app
 
