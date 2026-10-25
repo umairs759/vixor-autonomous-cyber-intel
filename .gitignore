@@ -79,9 +79,9 @@ backend/reports/
 *.log
 logs/
 
-# Alembic
-backend/alembic/versions/*.py
-!backend/alembic/versions/__init__.py
+# Alembic - track migration files, ignore auto-generated only
+!backend/alembic/versions/*.py
+
 
 # Terraform
 *.tfstate
