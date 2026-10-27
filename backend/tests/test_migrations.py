@@ -36,8 +36,22 @@ import app.models.user  # noqa: F401
 from app.models.base import Base
 
 
+# Project root (parent of backend/) so the installed alembic package is used
+# instead of the local backend/alembic/ package directory shadowing it.
+_PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
+
+
 def _run_alembic(database_url: str, *args: str) -> subprocess.CompletedProcess:
-    """Run an alembic CLI command with the given database URL."""
+    """Run an alembic CLI command with the given database URL.
+
+    The subprocess is executed from the project root so that the local
+    ``backend/alembic/`` package directory does not shadow the installed
+    ``alembic`` package (which would raise ``No module named alembic.__main__``).
+    From the project root, ``script_location = backend/alembic`` in
+    ``backend/alembic.ini`` resolves correctly relative to the CWD.
+    """
     env = dict(os.environ)
     env["DATABASE_URL"] = database_url
     return subprocess.run(
@@ -46,6 +60,7 @@ def _run_alembic(database_url: str, *args: str) -> subprocess.CompletedProcess:
         text=True,
         env=env,
         check=False,
+        cwd=_PROJECT_ROOT,
     )
 
 
