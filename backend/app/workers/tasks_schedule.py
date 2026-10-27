@@ -55,11 +55,7 @@ def run_scheduled_scan(domain_id: str) -> dict[str, Any]:
         # Dispatch a scan for the domain's assets
         from app.models.asset import Asset
 
-        assets = (
-            db.query(Asset)
-            .filter(Asset.domain_id == domain_id)
-            .all()
-        )
+        assets = db.query(Asset).filter(Asset.domain_id == domain_id).all()
         asset_ids = [str(a.id) for a in assets]
 
         if not asset_ids:
@@ -81,9 +77,7 @@ def run_scheduled_scan(domain_id: str) -> dict[str, Any]:
         db.refresh(scan)
 
         for asset_id in asset_ids:
-            db.add(
-                ScanAsset(scan_id=scan.id, asset_id=asset_id, status="pending")
-            )
+            db.add(ScanAsset(scan_id=scan.id, asset_id=asset_id, status="pending"))
         db.commit()
 
         # Dispatch the async scan pipeline

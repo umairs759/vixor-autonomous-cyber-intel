@@ -49,9 +49,7 @@ async def get_correlations(
             )
 
         correlations = (
-            db.query(Correlation)
-            .filter(Correlation.scan_id == scan_id)
-            .all()
+            db.query(Correlation).filter(Correlation.scan_id == scan_id).all()
         )
 
         return [

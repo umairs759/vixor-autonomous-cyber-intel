@@ -37,9 +37,7 @@ from app.models.base import Base
 
 # Project root (parent of backend/) so the installed alembic package is used
 # instead of the local backend/alembic/ package directory shadowing it.
-_PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..")
-)
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def _run_alembic(database_url: str, *args: str) -> subprocess.CompletedProcess:
@@ -53,6 +51,9 @@ def _run_alembic(database_url: str, *args: str) -> subprocess.CompletedProcess:
     """
     env = dict(os.environ)
     env["DATABASE_URL"] = database_url
+    env.setdefault(
+        "JWT_SECRET_KEY", "test_jwt_secret_key_for_migration_tests_0123456789"
+    )
     return subprocess.run(
         [sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", *args],
         capture_output=True,

@@ -57,7 +57,12 @@ def extract_features(
     port = str(evidence.get("port", "0"))
 
     # Template severity to numeric
-    severity_map: dict[str, float] = {"low": 0.25, "medium": 0.5, "high": 0.75, "critical": 1.0}
+    severity_map: dict[str, float] = {
+        "low": 0.25,
+        "medium": 0.5,
+        "high": 0.75,
+        "critical": 1.0,
+    }
     template_sev_val = severity_map.get(template_severity.lower(), 0.5)
 
     features: dict[str, Any] = {

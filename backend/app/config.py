@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     )
     # Redis / Celery
     REDIS_URL: str = Field(
-        default="redis://localhost:6379/0", description="Redis broker / result backend URL"
+        default="redis://localhost:6379/0",
+        description="Redis broker / result backend URL",
     )
     # JWT
     JWT_SECRET_KEY: str | None = Field(

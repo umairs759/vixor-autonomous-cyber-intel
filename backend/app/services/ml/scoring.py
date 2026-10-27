@@ -70,9 +70,7 @@ class ScoringService:
         features: dict[str, Any],
     ) -> dict[str, Any]:
         """Score using the trained ML model."""
-        feature_vec = np.array(
-            [[features.get(name, 0.0) for name in feature_names()]]
-        )
+        feature_vec = np.array([[features.get(name, 0.0) for name in feature_names()]])
 
         try:
             # Get prediction (0-1 probability)

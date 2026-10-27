@@ -87,9 +87,7 @@ async def list_schedules(
     db = get_db_session()
     try:
         schedules = (
-            db.query(ScanSchedule)
-            .filter(ScanSchedule.domain_id == domain_id)
-            .all()
+            db.query(ScanSchedule).filter(ScanSchedule.domain_id == domain_id).all()
         )
 
         return [
@@ -98,9 +96,7 @@ async def list_schedules(
                 "domain_id": s.domain_id,
                 "cron": s.cron,
                 "is_active": s.is_active,
-                "last_run_at": s.last_run_at.isoformat()
-                if s.last_run_at
-                else None,
+                "last_run_at": s.last_run_at.isoformat() if s.last_run_at else None,
             }
             for s in schedules
         ]

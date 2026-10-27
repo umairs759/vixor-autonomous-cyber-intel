@@ -38,9 +38,7 @@ class FindingScore(Base):
         nullable=False,
     )
     model_version: Mapped[str] = mapped_column(String(50), nullable=False)
-    features: Mapped[dict[str, Any]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    features: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     shap_values: Mapped[dict[str, float]] = mapped_column(
         JSON, nullable=False, default=dict
     )

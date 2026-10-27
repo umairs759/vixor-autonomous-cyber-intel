@@ -46,9 +46,7 @@ def score_findings(finding_ids: list[str]) -> dict[str, Any]:
             if score:
                 score.risk_score = score_result.get("risk_score", 0.0)
                 score.risk_class = score_result.get("risk_class", "low")
-                score.model_version = score_result.get(
-                    "model_version", "fallback"
-                )
+                score.model_version = score_result.get("model_version", "fallback")
                 score.features = score_result.get("features", {})
                 score.shap_values = score_result.get("shap_values", {})
                 score.narrative = score_result.get("narrative", "")
@@ -58,9 +56,7 @@ def score_findings(finding_ids: list[str]) -> dict[str, Any]:
                     finding_id=finding_id,
                     risk_score=score_result.get("risk_score", 0.0),
                     risk_class=score_result.get("risk_class", "low"),
-                    model_version=score_result.get(
-                        "model_version", "fallback"
-                    ),
+                    model_version=score_result.get("model_version", "fallback"),
                     features=score_result.get("features", {}),
                     shap_values=score_result.get("shap_values", {}),
                     narrative=score_result.get("narrative", ""),

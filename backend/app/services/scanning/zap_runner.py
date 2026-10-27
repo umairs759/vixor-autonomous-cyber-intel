@@ -44,11 +44,7 @@ class ZapRunner:
         try:
             with httpx.Client(timeout=30) as client:
                 response = client.request(method, url, params=params)
-            return (
-                response.json()
-                if response.content
-                else {}
-            )
+            return response.json() if response.content else {}
         except Exception as exc:
             logger.exception("zap api error", path=path, error=str(exc))
             return {"error": str(exc)}

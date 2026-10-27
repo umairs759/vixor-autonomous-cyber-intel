@@ -152,8 +152,7 @@ async def get_dashboard_trends(
 
         return {
             "trends": [
-                {"date": date, "count": count}
-                for date, count in sorted(trends.items())
+                {"date": date, "count": count} for date, count in sorted(trends.items())
             ],
         }
     finally:

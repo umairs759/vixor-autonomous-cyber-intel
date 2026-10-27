@@ -57,7 +57,5 @@ class RateLimiter:
         except RedisError:
             # Redis unavailable — fail open so auth/scan endpoints stay usable
             # locally / during outages. Rate limiting resumes when Redis returns.
-            logger.warning(
-                "redis_unavailable_rate_limit_fail_open", key=key
-            )
+            logger.warning("redis_unavailable_rate_limit_fail_open", key=key)
             return True, limit

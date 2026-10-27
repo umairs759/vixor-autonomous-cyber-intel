@@ -156,9 +156,7 @@ async def update_user(
         user.email = user_data.email
 
     if user_data.password is not None:
-        user.password_hash = AuthService.hash_password_static(
-            user_data.password
-        )
+        user.password_hash = AuthService.hash_password_static(user_data.password)
 
     if user_data.role is not None:
         try:

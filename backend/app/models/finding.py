@@ -41,9 +41,7 @@ class Finding(Base, TimestampMixin):
     severity_raw: Mapped[str] = mapped_column(String(50), nullable=False)
     cvss: Mapped[float | None] = mapped_column(nullable=True)
     cve_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
-    evidence: Mapped[dict[str, Any]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     remediation: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     asset: Mapped["Asset"] = relationship("Asset", back_populates="findings")

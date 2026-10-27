@@ -66,9 +66,7 @@ def create_access_token(
     secret = settings.JWT_SECRET_KEY
     if secret is None:
         raise ValueError("JWT_SECRET_KEY is not configured")
-    encoded_jwt: str = jwt.encode(
-        to_encode, secret, algorithm=settings.JWT_ALGORITHM
-    )
+    encoded_jwt: str = jwt.encode(to_encode, secret, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
 

@@ -1,7 +1,7 @@
 # VIXOR — Tasks (execute top to bottom)
 
 ## Setup
-[ ] T-001 Init git repo, .gitignore, .editorconfig, pre-commit (ruff, eslint, gitleaks)
+[x] T-001 Init git repo, .gitignore, .editorconfig, pre-commit (ruff, eslint, gitleaks)
 [x] T-002 Backend skeleton: FastAPI app, config via pydantic-settings, /health, structured JSON logging
 [ ] T-003 docker-compose: api, worker, beat, web, postgres, redis, zap, scanner-tools with healthchecks and resource limits
 [x] T-004 Alembic setup and base migration; pytest skeleton with test DB fixture

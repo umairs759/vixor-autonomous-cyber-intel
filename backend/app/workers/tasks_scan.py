@@ -77,9 +77,7 @@ def run_scan(  # type: ignore[no-untyped-def]
             domain_verified = (
                 domain.status == "verified" and domain.verified_at is not None
             )
-            in_scope, reason = is_in_scope(
-                domain, asset.hostname, resolve_dns=False
-            )
+            in_scope, reason = is_in_scope(domain, asset.hostname, resolve_dns=False)
             if not in_scope:
                 logger.warning(
                     "asset_out_of_scope",
