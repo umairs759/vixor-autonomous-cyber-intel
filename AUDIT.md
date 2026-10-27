@@ -51,7 +51,7 @@
 | T-018 Domain registration + token generation | [WRITTEN-BUT-UNVERIFIED] | `domains.py`, `domain_service.py` present. Not live-verified. |
 | T-019 Domain verification (DNS TXT + file) + periodic re-verification | [WRITTEN-BUT-UNVERIFIED] | `domain_verification.py` (verify_dns_txt, verify_file, perform_verification, reverify_domain) present. DNS/file verification never executed against real records/live server. Periodic re-verification task not wired to Celery Beat (no workers). |
 | T-020 scope_guard service + exhaustive tests | [DONE-VERIFIED] | `scope_guard.py` with hostname validation, IP resolution, private/CDN/metadata blocking, domain verification window. `test_scope_guard.py` with 51 unit tests all passing. Enforced in `tasks_scan.py` worker via `is_in_scope()` before each asset scan. |
-| T-021 Discovery: Subfinder runner | [WRITTEN-BUT-UNVERIFIED] | `subfinder.py` present. Subfinder binary not in scanner-tools image (`projectdiscovery/nuclei:latest` only). Never executed. |
+| T-021 Discovery: Subfinder runner | [DONE-VERIFIED] | `subfinder.py` present with hostname validation, subprocess shell=False, JSON parsing, scope filtering. `test_subfinder.py` with 13 tests all passing using mocked subprocess (binary not available locally due to Docker Hub restriction). |
 | T-022 Discovery: CT log client (crt.sh) with caching and timeouts | [WRITTEN-BUT-UNVERIFIED] | `ct_logs.py` present. Never executed against crt.sh or mocked. |
 | T-023 Discovery: DNS enumeration + wildcard detection | [WRITTEN-BUT-UNVERIFIED] | `dns_enum.py` present. Never executed. |
 | T-024 Discovery: httpx probe (live hosts, tech fingerprinting) | [WRITTEN-BUT-UNVERIFIED] | `httpx_probe.py` present. httpx binary not available in runner image. Never executed. |

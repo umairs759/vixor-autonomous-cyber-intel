@@ -20,9 +20,10 @@
 - T-010: Security headers, CORS allowlist, request size limits — SecurityHeadersMiddleware, CORS allowlist, RequestSizeMiddleware (MAX_REQUEST_SIZE_BYTES=10MB) added and verified. 7 tests added, all passing.
 - T-016: Users admin endpoints + tests — 11 integration tests added, all passing. Create/list/update user + audit-logs endpoints verified with RBAC (403/401), validation (409/400/404).
 - T-020: scope_guard service + exhaustive tests — 51 unit tests passing. Hostname validation, IP resolution, private/CDN/metadata blocking, domain verification window all verified. Enforced in tasks_scan.py worker.
+- T-021: Discovery: Subfinder runner — 13 unit tests passing with mocked subprocess (binary not available locally). Hostname validation, shell=False, JSON/plain output parsing, scope filtering verified.
 
 ## Remaining Tasks
-- T-021 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
+- T-022 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
 - T-029 to T-031: Scan orchestrator, dedupe, progress (workers implemented)
 - T-032 to T-036: ML dataset + training + scoring + SHAP + narratives (trained, needs wired scan flow)
 - T-037 to T-038: Regression and correlation engines (code present, tests pending)
