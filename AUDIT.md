@@ -50,7 +50,7 @@
 | T-017 Projects CRUD with ownership checks | [WRITTEN-BUT-UNVERIFIED] | `projects.py`, `project_service.py`, `ownership.py` present. Not live-verified. |
 | T-018 Domain registration + token generation | [WRITTEN-BUT-UNVERIFIED] | `domains.py`, `domain_service.py` present. Not live-verified. |
 | T-019 Domain verification (DNS TXT + file) + periodic re-verification | [WRITTEN-BUT-UNVERIFIED] | `domain_verification.py` (verify_dns_txt, verify_file, perform_verification, reverify_domain) present. DNS/file verification never executed against real records/live server. Periodic re-verification task not wired to Celery Beat (no workers). |
-| T-020 scope_guard service + exhaustive tests | [WRITTEN-BUT-UNVERIFIED] | `scope_guard.py` + `test_scope_guard.py` present (51 tests claimed). Logic present but not enforced at runtime in a running scanner/API flow. |
+| T-020 scope_guard service + exhaustive tests | [DONE-VERIFIED] | `scope_guard.py` with hostname validation, IP resolution, private/CDN/metadata blocking, domain verification window. `test_scope_guard.py` with 51 unit tests all passing. Enforced in `tasks_scan.py` worker via `is_in_scope()` before each asset scan. |
 | T-021 Discovery: Subfinder runner | [WRITTEN-BUT-UNVERIFIED] | `subfinder.py` present. Subfinder binary not in scanner-tools image (`projectdiscovery/nuclei:latest` only). Never executed. |
 | T-022 Discovery: CT log client (crt.sh) with caching and timeouts | [WRITTEN-BUT-UNVERIFIED] | `ct_logs.py` present. Never executed against crt.sh or mocked. |
 | T-023 Discovery: DNS enumeration + wildcard detection | [WRITTEN-BUT-UNVERIFIED] | `dns_enum.py` present. Never executed. |

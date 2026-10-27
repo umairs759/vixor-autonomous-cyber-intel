@@ -26,7 +26,7 @@
 [x] T-017 Projects CRUD with ownership checks
 [x] T-018 Domain registration + token generation
 [x] T-019 Domain verification (DNS TXT + file) + periodic re-verification task
-[ ] T-020 scope_guard service (suffix, IP resolution, CDN/shared-host blocklist, private range block) + exhaustive tests
+[x] T-020 scope_guard service (suffix, IP resolution, CDN/shared-host blocklist, private range block) + exhaustive tests
 [ ] T-021 Discovery: Subfinder runner
 [ ] T-022 Discovery: CT log client (crt.sh) with caching and timeouts
 [ ] T-023 Discovery: DNS enumeration + wildcard detection

@@ -19,9 +19,9 @@
 - T-008: Audit logging service + middleware + /admin/audit-logs — audit_service.py fixed (event_metadata column mapping), AuditMiddleware added and wired into main.py, /api/v1/users/audit-logs verified (admin only, 403 for non-admin, 401 for no token). 9 tests added, all passing.
 - T-010: Security headers, CORS allowlist, request size limits — SecurityHeadersMiddleware, CORS allowlist, RequestSizeMiddleware (MAX_REQUEST_SIZE_BYTES=10MB) added and verified. 7 tests added, all passing.
 - T-016: Users admin endpoints + tests — 11 integration tests added, all passing. Create/list/update user + audit-logs endpoints verified with RBAC (403/401), validation (409/400/404).
+- T-020: scope_guard service + exhaustive tests — 51 unit tests passing. Hostname validation, IP resolution, private/CDN/metadata blocking, domain verification window all verified. Enforced in tasks_scan.py worker.
 
 ## Remaining Tasks
-- T-020: scope_guard service + exhaustive tests (code present, needs live scan test)
 - T-021 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
 - T-029 to T-031: Scan orchestrator, dedupe, progress (workers implemented)
 - T-032 to T-036: ML dataset + training + scoring + SHAP + narratives (trained, needs wired scan flow)
