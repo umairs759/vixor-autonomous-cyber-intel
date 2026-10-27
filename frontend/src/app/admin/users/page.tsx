@@ -84,11 +84,11 @@ export default function AdminUsersPage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input type="email" placeholder="user@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
+              <Input type="email" placeholder="user@example.com" value={newEmail} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>Password</Label>
-              <Input type="password" placeholder="••••••••" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+              <Input type="password" placeholder="••••••••" value={newPassword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)} required />
             </div>
             <div className="space-y-2 flex items-end">
               <select value={newRole} onChange={e => setNewRole(e.target.value)} className="input">
@@ -121,8 +121,4 @@ export default function AdminUsersPage() {
       </main>
     </div>
   )
-}
-
-function Input(props: any) {
-  return <input className="input" {...props} />
 }

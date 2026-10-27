@@ -21,9 +21,13 @@ async function request<T>(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<T> {
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(init?.headers ?? {}),
+  }
+  if (init?.headers) {
+    for (const [key, value] of Object.entries(init.headers)) {
+      headers[String(key)] = String(value)
+    }
   }
 
   if (accessToken) {

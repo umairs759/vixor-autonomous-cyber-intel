@@ -21,24 +21,30 @@ const alertVariants = cva(
 )
 
 interface AlertProps
-  extends React.Attributes<HTMLDivElement>,
+  extends React.ComponentPropsWithoutRef<"div">,
     VariantProps<typeof alertVariants> {
   title?: string
   description?: string
 }
 
-function Alert({ className, variant, title, description }: AlertProps) {
+function Alert({
+  className,
+  variant,
+  title,
+  description,
+  children,
+  ...props
+}: AlertProps) {
   return (
-    <div className={cn(alertVariants({ variant }), className)} role="alert">
+    <div className={cn(alertVariants({ variant }), className)} role="alert" {...props}>
       {title && <h2 className="mb-1 font-medium">{title}</h2>}
-      {description && (
-        <p className="text-sm">{description}</p>
-      )}
+      {description && <p className="text-sm">{description}</p>}
+      {children}
     </div>
   )
 }
 
-interface AlertTitleProps extends React.Attributes<HTMLHeadingElement> {
+interface AlertTitleProps extends React.ComponentPropsWithoutRef<"h3"> {
   children: React.ReactNode
 }
 
@@ -51,7 +57,7 @@ function AlertTitle({ className, ...props }: AlertTitleProps) {
   )
 }
 
-interface AlertDescriptionProps extends React.Attributes<HTMLParagraphElement> {
+interface AlertDescriptionProps extends React.ComponentPropsWithoutRef<"p"> {
   children: React.ReactNode
 }
 

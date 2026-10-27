@@ -1,5 +1,17 @@
 /** VIXOR — Zod schema tests */
 
+// Jest globals are available at runtime via the jest test runner.
+declare const describe: (name: string, fn: () => void) => void
+declare const it: (name: string, fn: () => void) => void
+declare const expect: {
+  <T>(actual: T): {
+    toBe: (expected: unknown) => void
+    toBeTruthy: () => void
+    toBeFalsy: () => void
+    not: { toBe: (expected: unknown) => void }
+  }
+}
+
 import { LoginSchema, RegisterDomainSchema } from "./schemas"
 
 describe("LoginSchema", () => {

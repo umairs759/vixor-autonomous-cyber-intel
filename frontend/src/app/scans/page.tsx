@@ -77,7 +77,7 @@ export default function ScansPage() {
           <Input
             placeholder="Domain ID"
             value={domainId}
-            onChange={e => setDomainId(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDomainId(e.target.value)}
           />
           <Button onClick={launchScan}>Launch Scan</Button>
           <Button variant="outline" onClick={loadScans}>
