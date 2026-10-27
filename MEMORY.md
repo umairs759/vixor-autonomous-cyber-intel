@@ -21,9 +21,10 @@
 - T-016: Users admin endpoints + tests — 11 integration tests added, all passing. Create/list/update user + audit-logs endpoints verified with RBAC (403/401), validation (409/400/404).
 - T-020: scope_guard service + exhaustive tests — 51 unit tests passing. Hostname validation, IP resolution, private/CDN/metadata blocking, domain verification window all verified. Enforced in tasks_scan.py worker.
 - T-021: Discovery: Subfinder runner — 13 unit tests passing with mocked subprocess (binary not available locally). Hostname validation, shell=False, JSON/plain output parsing, scope filtering verified.
+- T-022: Discovery: CT log client — 12 unit tests passing with mocked httpx. Domain validation, httpx no-redirect, timeout, JSON parsing, wildcard stripping, deduplication verified.
 
 ## Remaining Tasks
-- T-022 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
+- T-023 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
 - T-029 to T-031: Scan orchestrator, dedupe, progress (workers implemented)
 - T-032 to T-036: ML dataset + training + scoring + SHAP + narratives (trained, needs wired scan flow)
 - T-037 to T-038: Regression and correlation engines (code present, tests pending)

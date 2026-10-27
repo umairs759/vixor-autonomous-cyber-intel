@@ -28,7 +28,7 @@
 [x] T-019 Domain verification (DNS TXT + file) + periodic re-verification task
 [x] T-020 scope_guard service (suffix, IP resolution, CDN/shared-host blocklist, private range block) + exhaustive tests
 [x] T-021 Discovery: Subfinder runner
-[ ] T-022 Discovery: CT log client (crt.sh) with caching and timeouts
+[x] T-022 Discovery: CT log client (crt.sh) with caching and timeouts
 [ ] T-023 Discovery: DNS enumeration + wildcard detection
 [ ] T-024 Discovery: httpx probe (live hosts, technology fingerprinting)
 [ ] T-025 Discovery Celery task + asset inventory API
