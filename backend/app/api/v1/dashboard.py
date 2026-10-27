@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.core.rbac import RequireViewer
+from app.core.rbac import require_role
 from app.deps import get_db_session
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
     summary="Dashboard summary stats (ownership-checked)",
 )
 async def get_dashboard_summary(
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> dict[str, Any]:
     db = get_db_session()
     try:
@@ -118,7 +118,7 @@ async def get_dashboard_summary(
     summary="Dashboard trend data (ownership-checked)",
 )
 async def get_dashboard_trends(
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> dict[str, Any]:
     db = get_db_session()
     try:

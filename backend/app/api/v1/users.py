@@ -11,7 +11,7 @@ import redis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.core.rbac import RequireAdmin
+from app.core.rbac import require_role
 from app.deps import get_db
 from app.models.audit_log import AuditLog
 from app.models.user import User, UserRole
@@ -45,7 +45,7 @@ async def create_user(
     request: Request,
     user_data: CreateUserRequest,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireAdmin),
+    current_user: dict[str, Any] = Depends(require_role("admin")),
 ) -> UserResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -105,7 +105,7 @@ async def create_user(
 )
 async def list_users(
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireAdmin),
+    current_user: dict[str, Any] = Depends(require_role("admin")),
 ) -> list[UserResponse]:
     users = auth.db.query(User).all()
     return [
@@ -130,7 +130,7 @@ async def update_user(
     user_id: str,
     user_data: UpdateUserRequest,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireAdmin),
+    current_user: dict[str, Any] = Depends(require_role("admin")),
 ) -> UserResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -202,7 +202,7 @@ async def update_user(
 )
 async def get_audit_logs(
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireAdmin),
+    current_user: dict[str, Any] = Depends(require_role("admin")),
     limit: int = 100,
     offset: int = 0,
 ) -> list[AuditLogResponse]:

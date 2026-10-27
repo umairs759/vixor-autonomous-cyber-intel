@@ -15,9 +15,11 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import redis
+from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.core.logging import get_logger
 from app.core.rate_limit import RateLimiter
 from app.core.security import (
     constant_time_compare,
@@ -30,6 +32,7 @@ from app.models.user import User
 from app.services.audit_service import write_audit_log
 
 settings = get_settings()
+logger = get_logger("auth_service")
 
 # Lockout constants (from PRD US-01)
 FAILURE_THRESHOLD = 5
@@ -186,17 +189,24 @@ class AuthService:
         ttl_seconds = int(
             timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS).total_seconds()
         )
-        self.redis.setex(
-            self._refresh_token_key(refresh_jti),
-            ttl_seconds,
-            refresh_token_hash,
-        )
-
-        # Also store a reverse mapping: user_id -> set of active refresh JTIs
-        # (simplified: store jti under user key)
-        user_key = f"user_refresh_tokens:{user.id}"
-        self.redis.sadd(user_key, refresh_jti)
-        self.redis.expire(user_key, ttl_seconds)
+        try:
+            self.redis.setex(
+                self._refresh_token_key(refresh_jti),
+                ttl_seconds,
+                refresh_token_hash,
+            )
+            # Also store a reverse mapping: user_id -> set of active refresh JTIs
+            user_key = f"user_refresh_tokens:{user.id}"
+            self.redis.sadd(user_key, refresh_jti)
+            self.redis.expire(user_key, ttl_seconds)
+        except RedisError:
+            # Redis unavailable — tokens still issued (JWT is self-contained),
+            # but refresh rotation/revocation won't work until Redis returns.
+            logger.warning(
+                "redis_unavailable_token_storage_skipped",
+                user_id=user.id,
+                refresh_jti=refresh_jti,
+            )
 
         return access_token, refresh_token
 

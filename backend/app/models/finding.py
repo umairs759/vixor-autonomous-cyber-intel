@@ -6,8 +6,8 @@ A unified finding normalized from scanner output. Deduplicated by fingerprint.
 import enum
 from typing import Any, Optional
 
-from sqlalchemy import Enum, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Enum, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
@@ -40,9 +40,9 @@ class Finding(Base, TimestampMixin):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     severity_raw: Mapped[str] = mapped_column(String(50), nullable=False)
     cvss: Mapped[float | None] = mapped_column(nullable=True)
-    cve_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    cve_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     evidence: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
+        JSON, nullable=False, default=dict
     )
     remediation: Mapped[str | None] = mapped_column(Text, nullable=True)
 

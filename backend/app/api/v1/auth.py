@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import RateLimiter
-from app.core.rbac import RequireViewer
+from app.core.rbac import require_role
 from app.deps import get_db
 from app.redis import get_redis
 from app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, TokenResponse
@@ -139,7 +139,7 @@ async def logout(
     request: Request,
     logout_data: LogoutRequest,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> None:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")

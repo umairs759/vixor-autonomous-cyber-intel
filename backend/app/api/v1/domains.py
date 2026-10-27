@@ -13,7 +13,7 @@ import redis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.core.rbac import RequireViewer
+from app.core.rbac import require_role
 from app.deps import get_db
 from app.redis import get_redis
 from app.schemas.domain import (
@@ -51,7 +51,7 @@ async def register_domain(
     domain_data: RegisterDomainRequest,
     domain_svc: DomainService = Depends(get_domain_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> DomainResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -100,7 +100,7 @@ async def register_domain(
 async def list_domains(
     project_id: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> list[DomainResponse]:
     domains = domain_svc.list_domains(
         project_id=project_id,
@@ -134,7 +134,7 @@ async def verify_domain(
     verify_data: VerifyDomainRequest,
     domain_svc: DomainService = Depends(get_domain_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> DomainResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -200,7 +200,7 @@ async def verify_domain(
 async def get_domain(
     domain_id: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> DomainResponse:
     domain = domain_svc.get_domain(
         domain_id=domain_id,

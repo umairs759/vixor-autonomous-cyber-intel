@@ -8,6 +8,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Enum,
@@ -16,7 +17,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
@@ -37,7 +38,7 @@ class Asset(Base, TimestampMixin):
         UUID(as_uuid=False), ForeignKey("domains.id"), nullable=False, index=True
     )
     hostname: Mapped[str] = mapped_column(String(253), nullable=False, index=True)
-    ips: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    ips: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     is_live: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     scope_status: Mapped[ScopeStatus] = mapped_column(
         Enum(ScopeStatus, values_callable=lambda obj: [e.value for e in obj]),
@@ -46,7 +47,7 @@ class Asset(Base, TimestampMixin):
         index=True,
     )
     scope_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    technologies: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    technologies: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     sensitivity_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     first_seen: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

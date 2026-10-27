@@ -7,8 +7,8 @@ scored_by distinguishes ML-scored vs fallback rule-based.
 import enum
 from typing import Any
 
-from sqlalchemy import Enum, Float, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Enum, Float, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -39,10 +39,10 @@ class FindingScore(Base):
     )
     model_version: Mapped[str] = mapped_column(String(50), nullable=False)
     features: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False, default=dict
+        JSON, nullable=False, default=dict
     )
     shap_values: Mapped[dict[str, float]] = mapped_column(
-        JSONB, nullable=False, default=dict
+        JSON, nullable=False, default=dict
     )
     narrative: Mapped[str] = mapped_column(Text, nullable=False)
     scored_by: Mapped[ScoredBy] = mapped_column(

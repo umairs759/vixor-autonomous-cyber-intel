@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.rbac import RequireViewer
+from app.core.rbac import require_role
 
 router = APIRouter(prefix="/findings", tags=["findings"])
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/findings", tags=["findings"])
 )
 async def get_finding(
     finding_id: str,
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> dict[str, Any]:
     from app.deps import get_db_session
 

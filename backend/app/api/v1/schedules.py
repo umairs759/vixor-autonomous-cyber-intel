@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.rbac import RequireAnalyst, RequireViewer
+from app.core.rbac import require_role
 from app.deps import get_db, get_db_session
 from app.models.schedule import ScanSchedule
 from app.services.domain_service import DomainService
@@ -29,7 +29,7 @@ async def create_schedule(
     domain_id: str,
     cron: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict[str, Any] = Depends(RequireAnalyst),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> dict[str, Any]:
     domain = domain_svc.get_domain(
         domain_id=domain_id,
@@ -71,7 +71,7 @@ async def create_schedule(
 async def list_schedules(
     domain_id: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> list[dict[str, Any]]:
     domain = domain_svc.get_domain(
         domain_id=domain_id,
@@ -117,7 +117,7 @@ async def delete_schedule(
     domain_id: str,
     schedule_id: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict[str, Any] = Depends(RequireAnalyst),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> None:
     domain = domain_svc.get_domain(
         domain_id=domain_id,

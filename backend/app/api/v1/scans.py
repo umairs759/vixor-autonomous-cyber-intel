@@ -10,7 +10,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.rbac import RequireAnalyst, RequireViewer
+from app.core.rbac import require_role
 from app.deps import get_db, get_db_session
 from app.models.scan import Scan, ScanStatus
 from app.models.scan_asset import ScanAsset
@@ -32,7 +32,7 @@ async def create_scan(
     domain_id: str,
     asset_ids: list[str],
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict[str, Any] = Depends(RequireAnalyst),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> dict[str, Any]:
     domain = domain_svc.get_domain(
         domain_id=domain_id,
@@ -76,7 +76,7 @@ async def create_scan(
 )
 async def get_scan(
     scan_id: str,
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> dict[str, Any]:
     db = get_db_session()
     try:
@@ -125,7 +125,7 @@ async def get_scan(
 )
 async def get_scan_findings(
     scan_id: str,
-    current_user: dict[str, Any] = Depends(RequireViewer),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> list[dict[str, Any]]:
     db = get_db_session()
     try:

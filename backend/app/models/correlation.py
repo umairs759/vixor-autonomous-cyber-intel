@@ -3,8 +3,8 @@
 Groups related findings into attack narratives with a combined score.
 """
 
-from sqlalchemy import Float, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Float, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
@@ -25,7 +25,7 @@ class Correlation(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     narrative: Mapped[str] = mapped_column(Text, nullable=False)
     combined_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    finding_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    finding_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
     scan: Mapped["Scan"] = relationship("Scan", back_populates="correlations")
     asset: Mapped["Asset"] = relationship("Asset")
