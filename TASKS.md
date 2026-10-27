@@ -12,7 +12,7 @@
 [x] T-007 RBAC dependency (admin/analyst/viewer) + tests
 [x] T-008 Audit logging service + middleware + /admin/audit-logs
 [x] T-009 Rate limiting (Redis) on auth and scan endpoints; account lockout
-[ ] T-010 Security headers, CORS allowlist, request size limits
+[x] T-010 Security headers, CORS allowlist, request size limits
 
 ## Database
 [x] T-011 Models and migrations for users, audit_logs, projects, domains

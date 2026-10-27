@@ -76,6 +76,11 @@ class Settings(BaseSettings):
         default="https://localhost:8000/api/v1",
         description="Public API base URL (browser-safe)",
     )
+    MAX_REQUEST_SIZE_BYTES: int = Field(
+        default=10485760,
+        ge=1024,
+        description="Max request body size in bytes (default 10 MB)",
+    )
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod

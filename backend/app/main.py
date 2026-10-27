@@ -17,6 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import get_settings
 from app.core.audit_middleware import AuditMiddleware
 from app.core.logging import configure_logging, get_logger
+from app.core.request_size import RequestSizeMiddleware
 
 configure_logging()
 logger = get_logger("main")
@@ -89,6 +90,7 @@ def create_app() -> FastAPI:
         RequestIDMiddleware,
     )
     app.add_middleware(AuditMiddleware)
+    app.add_middleware(RequestSizeMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
