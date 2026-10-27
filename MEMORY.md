@@ -18,7 +18,7 @@
 
 ## Remaining Tasks
 - T-007: RBAC dependency (admin/analyst/viewer) + tests — 19 unit/integration tests added, all passing. Role hierarchy verified: admin > analyst > viewer. 403 for insufficient role, 401 for missing/invalid token.
-- T-008: Audit logging + /admin/audit-logs (logged, tests pending)
+- T-008: Audit logging service + middleware + /admin/audit-logs — audit_service.py fixed (event_metadata column mapping), AuditMiddleware added and wired into main.py, /api/v1/users/audit-logs verified (admin only, 403 for non-admin, 401 for no token). 9 tests added, all passing.
 - T-010: Security headers, CORS, request size limits
 - T-016: Users admin endpoints + tests
 - T-020: scope_guard service + exhaustive tests (code present, needs live scan test)

@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
+from app.core.audit_middleware import AuditMiddleware
 from app.core.logging import configure_logging, get_logger
 
 configure_logging()
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         RequestIDMiddleware,
     )
+    app.add_middleware(AuditMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,

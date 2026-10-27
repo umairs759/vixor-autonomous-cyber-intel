@@ -31,7 +31,7 @@ def write_audit_log(
         user_id=user_id,
         ip=ip,
         user_agent=user_agent,
-        metadata=metadata or {},
+        event_metadata=metadata or {},
     )
     db.add(entry)
     db.commit()

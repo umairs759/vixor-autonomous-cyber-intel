@@ -28,7 +28,7 @@
 |------|--------|----------|
 | T-006 Password hashing (argon2), JWT access (15m) + refresh cookie | [WRITTEN-BUT-UNVERIFIED] | `auth_service.py`, `security.py`, `auth.py` present. Argon2/bcrypt in requirements. Never verified against a running auth service with real JWT/cookie flow. |
 | T-007 RBAC dependency (admin/analyst/viewer) + tests | [DONE-VERIFIED] | `rbac.py` + `ownership.py` implemented. `test_rbac.py` added with 19 tests: unit tests for require_role hierarchy (admin>analyst>viewer), integration tests via TestClient verifying 403 for non-admin on admin routes, 401 for missing/invalid tokens. 74/74 backend tests pass. |
-| T-008 Audit logging service + middleware + /admin/audit-logs | [WRITTEN-BUT-UNVERIFIED] | `audit_service.py`, audit middleware in domain_verification, `users.py`/`audit` admin route present. Never verified: no real DB entries confirmed via live API. |
+| T-008 Audit logging service + middleware + /admin/audit-logs | [DONE-VERIFIED] | `audit_service.py` with `write_audit_log` (fixed `event_metadata` column mapping bug). `AuditMiddleware` added in `app/core/audit_middleware.py` and wired into `main.py`. `GET /api/v1/users/audit-logs` (admin-only) verified. `test_audit.py` with 9 tests all passing. 83/83 backend tests pass. |
 | T-009 Rate limiting (Redis) on auth and scan endpoints; account lockout | [WRITTEN-BUT-UNVERIFIED] | `rate_limit.py` present. Redis not integrated in tests; no live verification. |
 | T-010 Security headers, CORS allowlist, request size limits | [WRITTEN-BUT-UNVERIFIED] | `SecurityHeadersMiddleware`, CORS config in `main.py`. Not verified via live HTTP responses/curl. |
 
