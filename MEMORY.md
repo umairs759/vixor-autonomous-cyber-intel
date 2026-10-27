@@ -17,7 +17,7 @@
 - Backend workers: celery_app, tasks_scan, tasks_ml, tasks_schedule implemented
 
 ## Remaining Tasks
-- T-007: RBAC dependency + tests (APIs wired, tests pending)
+- T-007: RBAC dependency (admin/analyst/viewer) + tests — 19 unit/integration tests added, all passing. Role hierarchy verified: admin > analyst > viewer. 403 for insufficient role, 401 for missing/invalid token.
 - T-008: Audit logging + /admin/audit-logs (logged, tests pending)
 - T-010: Security headers, CORS, request size limits
 - T-016: Users admin endpoints + tests

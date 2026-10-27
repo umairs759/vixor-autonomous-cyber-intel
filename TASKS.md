@@ -9,7 +9,7 @@
 
 ## Security Foundation
 [x] T-006 Password hashing (argon2), JWT access (15m) + refresh (httpOnly, Secure, SameSite=Strict cookie, rotation)
-[ ] T-007 RBAC dependency (admin/analyst/viewer) + tests
+[x] T-007 RBAC dependency (admin/analyst/viewer) + tests
 [ ] T-008 Audit logging service + middleware + /admin/audit-logs
 [x] T-009 Rate limiting (Redis) on auth and scan endpoints; account lockout
 [ ] T-010 Security headers, CORS allowlist, request size limits
