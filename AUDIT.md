@@ -46,7 +46,7 @@
 | Task | Status | Evidence |
 |------|--------|----------|
 | T-015 Auth endpoints + tests | [WRITTEN-BUT-UNVERIFIED] | `auth.py`, `auth_service.py` present. Unit-tested in isolation but not via live API/curl. |
-| T-016 Users admin endpoints + tests | [WRITTEN-BUT-UNVERIFIED] | `users.py` present. Not live-verified. |
+| T-016 Users admin endpoints + tests | [DONE-VERIFIED] | `users.py` has create/list/update user + audit-logs endpoints (admin only). `test_users.py` with 11 tests all passing: create (201), list (200), update (200), audit-logs (200), RBAC 403/401, duplicate email 409, invalid role 400, nonexistent user 404. 101/101 backend tests pass. |
 | T-017 Projects CRUD with ownership checks | [WRITTEN-BUT-UNVERIFIED] | `projects.py`, `project_service.py`, `ownership.py` present. Not live-verified. |
 | T-018 Domain registration + token generation | [WRITTEN-BUT-UNVERIFIED] | `domains.py`, `domain_service.py` present. Not live-verified. |
 | T-019 Domain verification (DNS TXT + file) + periodic re-verification | [WRITTEN-BUT-UNVERIFIED] | `domain_verification.py` (verify_dns_txt, verify_file, perform_verification, reverify_domain) present. DNS/file verification never executed against real records/live server. Periodic re-verification task not wired to Celery Beat (no workers). |

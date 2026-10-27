@@ -22,7 +22,7 @@
 
 ## Core Features
 [x] T-015 Auth endpoints + tests
-[ ] T-016 Users admin endpoints + tests
+[x] T-016 Users admin endpoints + tests
 [x] T-017 Projects CRUD with ownership checks
 [x] T-018 Domain registration + token generation
 [x] T-019 Domain verification (DNS TXT + file) + periodic re-verification task
