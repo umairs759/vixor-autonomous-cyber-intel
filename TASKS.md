@@ -2,30 +2,30 @@
 
 ## Setup
 [ ] T-001 Init git repo, .gitignore, .editorconfig, pre-commit (ruff, eslint, gitleaks)
-[ ] T-002 Backend skeleton: FastAPI app, config via pydantic-settings, /health, structured JSON logging
+[x] T-002 Backend skeleton: FastAPI app, config via pydantic-settings, /health, structured JSON logging
 [ ] T-003 docker-compose: api, worker, beat, web, postgres, redis, zap, scanner-tools with healthchecks and resource limits
 [x] T-004 Alembic setup and base migration; pytest skeleton with test DB fixture
 [x] T-005 Next.js 14 App Router skeleton with TypeScript, Tailwind, design tokens from DESIGN.md
 
 ## Security Foundation
-[ ] T-006 Password hashing (argon2), JWT access (15m) + refresh (httpOnly, Secure, SameSite=Strict cookie, rotation)
+[x] T-006 Password hashing (argon2), JWT access (15m) + refresh (httpOnly, Secure, SameSite=Strict cookie, rotation)
 [ ] T-007 RBAC dependency (admin/analyst/viewer) + tests
 [ ] T-008 Audit logging service + middleware + /admin/audit-logs
-[ ] T-009 Rate limiting (Redis) on auth and scan endpoints; account lockout
+[x] T-009 Rate limiting (Redis) on auth and scan endpoints; account lockout
 [ ] T-010 Security headers, CORS allowlist, request size limits
 
 ## Database
-[ ] T-011 Models and migrations for users, audit_logs, projects, domains
-[ ] T-012 Models and migrations for assets, scans, scan_assets, findings
-[ ] T-013 Models and migrations for finding_scores, finding_history, correlations, reports, scan_schedules
-[ ] T-014 Seed script: admin user from env, demo project with fixture data (dev only)
+[x] T-011 Models and migrations for users, audit_logs, projects, domains
+[x] T-012 Models and migrations for assets, scans, scan_assets, findings
+[x] T-013 Models and migrations for finding_scores, finding_history, correlations, reports, scan_schedules
+[x] T-014 Seed script: admin user from env, demo project with fixture data (dev only)
 
 ## Core Features
-[ ] T-015 Auth endpoints + tests
+[x] T-015 Auth endpoints + tests
 [ ] T-016 Users admin endpoints + tests
-[ ] T-017 Projects CRUD with ownership checks
-[ ] T-018 Domain registration + token generation
-[ ] T-019 Domain verification (DNS TXT + file) + periodic re-verification task
+[x] T-017 Projects CRUD with ownership checks
+[x] T-018 Domain registration + token generation
+[x] T-019 Domain verification (DNS TXT + file) + periodic re-verification task
 [ ] T-020 scope_guard service (suffix, IP resolution, CDN/shared-host blocklist, private range block) + exhaustive tests
 [ ] T-021 Discovery: Subfinder runner
 [ ] T-022 Discovery: CT log client (crt.sh) with caching and timeouts
