@@ -18,13 +18,16 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = Field(
-        ..., description="PostgreSQL connection URL (psycopg driver)"
+        default="postgresql+psycopg://vixor:vixor@localhost:5432/vixor",
+        description="PostgreSQL connection URL (psycopg driver)",
     )
     # Redis / Celery
-    REDIS_URL: str = Field(..., description="Redis broker / result backend URL")
+    REDIS_URL: str = Field(
+        default="redis://localhost:6379/0", description="Redis broker / result backend URL"
+    )
     # JWT
-    JWT_SECRET_KEY: str = Field(
-        ..., min_length=32, description="Secret key for signing JWTs"
+    JWT_SECRET_KEY: str | None = Field(
+        default=None, description="Secret key for signing JWTs (must be set via env)"
     )
     JWT_ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
@@ -75,7 +78,9 @@ class Settings(BaseSettings):
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod
-    def _jwt_secret_not_default(cls, v: str) -> str:
+    def _jwt_secret_not_default(cls, v: str | None) -> str | None:
+        if v is None:
+            raise ValueError("JWT_SECRET_KEY must be set via environment variable")
         if v in ("generate_with_openssl_rand_hex_64", "change_me", "secret", ""):
             raise ValueError(
                 "JWT_SECRET_KEY must not be a default or placeholder value"

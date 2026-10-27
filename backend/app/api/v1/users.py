@@ -5,6 +5,9 @@ GET /admin/audit-logs — admin only.
 All ownership checks, RBAC, and audit-logged.
 """
 
+from typing import Any
+
+import redis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -27,7 +30,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 def get_auth_service(
     db: Session = Depends(get_db),
-    redis=Depends(get_redis),
+    redis: redis.Redis = Depends(get_redis),
 ) -> AuthService:
     return AuthService(db=db, redis_client=redis)
 
@@ -42,8 +45,8 @@ async def create_user(
     request: Request,
     user_data: CreateUserRequest,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireAdmin),
-):
+    current_user: dict[str, Any] = Depends(RequireAdmin),
+) -> UserResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
@@ -64,7 +67,7 @@ async def create_user(
             detail="Invalid role. Must be one of: admin, analyst, viewer.",
         )
 
-    password_hash = AuthService.hash_password_static(user_data.password)  # type: ignore[attr-defined]
+    password_hash = AuthService.hash_password_static(user_data.password)
     new_user = User(
         email=user_data.email,
         password_hash=password_hash,
@@ -80,7 +83,7 @@ async def create_user(
         action="user_created",
         resource_type="user",
         resource_id=new_user.id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         ip=client_ip,
         user_agent=user_agent,
         metadata={"email": new_user.email, "role": new_user.role.value},
@@ -102,8 +105,8 @@ async def create_user(
 )
 async def list_users(
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireAdmin),
-):
+    current_user: dict[str, Any] = Depends(RequireAdmin),
+) -> list[UserResponse]:
     users = auth.db.query(User).all()
     return [
         UserResponse(
@@ -127,8 +130,8 @@ async def update_user(
     user_id: str,
     user_data: UpdateUserRequest,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireAdmin),
-):
+    current_user: dict[str, Any] = Depends(RequireAdmin),
+) -> UserResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
@@ -153,7 +156,9 @@ async def update_user(
         user.email = user_data.email
 
     if user_data.password is not None:
-        user.password_hash = AuthService.hash_password_static(user_data.password)  # type: ignore[attr-defined]
+        user.password_hash = AuthService.hash_password_static(
+            user_data.password
+        )
 
     if user_data.role is not None:
         try:
@@ -175,7 +180,7 @@ async def update_user(
         action="user_updated",
         resource_type="user",
         resource_id=user.id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         ip=client_ip,
         user_agent=user_agent,
         metadata={"updated_fields": user_data.model_dump(exclude_unset=True)},
@@ -197,10 +202,10 @@ async def update_user(
 )
 async def get_audit_logs(
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireAdmin),
+    current_user: dict[str, Any] = Depends(RequireAdmin),
     limit: int = 100,
     offset: int = 0,
-):
+) -> list[AuditLogResponse]:
     logs = (
         auth.db.query(AuditLog)
         .order_by(AuditLog.created_at.desc())

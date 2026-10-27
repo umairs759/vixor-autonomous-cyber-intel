@@ -15,14 +15,14 @@ logger = get_logger("ml.correlation")
 class CorrelationEngine:
     """Groups related findings into correlated attack narratives."""
 
-    def __init__(self, db_session):
+    def __init__(self, db_session: Any) -> None:
         self.db = db_session
 
     def correlate_findings(
         self,
         scan_id: str,
         asset_id: str,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Group findings for an asset into correlated narratives.
 
         Rules:
@@ -45,7 +45,7 @@ class CorrelationEngine:
         # Group findings by similarity rules
         groups = self._group_findings(findings)
 
-        correlations: list[dict] = []
+        correlations: list[dict[str, Any]] = []
         for group in groups:
             if len(group) < 2:
                 continue  # Single findings don't need correlation
@@ -69,14 +69,14 @@ class CorrelationEngine:
 
     def _group_findings(
         self,
-        findings: list[Any],
-    ) -> list[list[Any]]:
+        findings: list[Finding],
+    ) -> list[list[Finding]]:
         """Group findings by similarity rules."""
-        groups: list[list[Any]] = []
+        groups: list[list[Finding]] = []
         used: set[str] = set()
 
         # Rule 1: Group by same port
-        port_groups: dict[str, list[Any]] = {}
+        port_groups: dict[str, list[Finding]] = {}
         for f in findings:
             if f.id in used:
                 continue
@@ -93,7 +93,7 @@ class CorrelationEngine:
 
         # Rule 2: Group web-related findings
         web_keywords = ["xss", "header", "cookie", "csrf", "clickjacking"]
-        web_findings: list[Any] = []
+        web_findings: list[Finding] = []
         for f in findings:
             if f.id in used:
                 continue
@@ -106,7 +106,7 @@ class CorrelationEngine:
             groups.append(web_findings)
 
         # Rule 3: Group high-severity findings
-        high_findings: list[Any] = []
+        high_findings: list[Finding] = []
         for f in findings:
             if f.id in used:
                 continue
@@ -121,7 +121,7 @@ class CorrelationEngine:
 
     def _compute_combined_score(
         self,
-        findings: list[Any],
+        findings: list[Finding],
     ) -> float:
         """Compute combined score from correlated findings.
 
@@ -154,7 +154,7 @@ class CorrelationEngine:
 
     def _generate_narrative(
         self,
-        findings: list[Any],
+        findings: list[Finding],
         combined_score: float,
     ) -> str:
         """Generate a narrative for the correlated group."""

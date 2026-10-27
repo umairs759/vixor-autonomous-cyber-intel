@@ -14,6 +14,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import redis
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -39,7 +40,7 @@ REFRESH_TOKEN_KEY_PREFIX = "refresh_token:"
 
 
 class AuthService:
-    def __init__(self, db: Session, redis_client):
+    def __init__(self, db: Session, redis_client: redis.Redis):
         self.db = db
         self.rate_limiter = RateLimiter(redis_client)
         self.redis = redis_client
@@ -256,7 +257,11 @@ class AuthService:
             return None, None, "Invalid refresh token."
 
         # Constant-time comparison of token hash
-        if not constant_time_compare(stored_hash, refresh_token_hash):
+        if isinstance(stored_hash, bytes):
+            stored_hash_value = stored_hash.decode("utf-8")
+        else:
+            stored_hash_value = str(stored_hash)
+        if not constant_time_compare(stored_hash_value, refresh_token_hash):
             # Hash mismatch — possible reuse attack
             user_key = f"user_refresh_tokens:{user_id}"
             self.redis.delete(user_key)

@@ -6,6 +6,9 @@ user enumeration. Audit-logged on success and failure.
 Per-IP rate limiting enforced on login.
 """
 
+from typing import Any
+
+import redis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -21,12 +24,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 def get_auth_service(
     db: Session = Depends(get_db),
-    redis=Depends(get_redis),
+    redis: redis.Redis = Depends(get_redis),
 ) -> AuthService:
     return AuthService(db=db, redis_client=redis)
 
 
-def get_rate_limiter(redis=Depends(get_redis)) -> RateLimiter:
+def get_rate_limiter(redis: redis.Redis = Depends(get_redis)) -> RateLimiter:
     return RateLimiter(redis_client=redis)
 
 
@@ -46,7 +49,7 @@ async def login(
     login_data: LoginRequest,
     auth: AuthService = Depends(get_auth_service),
     rate_limiter: RateLimiter = Depends(get_rate_limiter),
-):
+) -> TokenResponse:
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent")
 
@@ -104,7 +107,7 @@ async def refresh(
     request: Request,
     refresh_data: RefreshRequest,
     auth: AuthService = Depends(get_auth_service),
-):
+) -> TokenResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
@@ -113,7 +116,7 @@ async def refresh(
         ip=client_ip,
         user_agent=user_agent,
     )
-    if error:
+    if error or new_access_token is None or new_refresh_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token.",
@@ -136,13 +139,13 @@ async def logout(
     request: Request,
     logout_data: LogoutRequest,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> None:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     auth.logout(
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         ip=client_ip,
         user_agent=user_agent,
     )
@@ -156,8 +159,8 @@ def write_audit_log_from_request(
     user_id: str | None,
     ip: str | None,
     user_agent: str | None,
-    metadata: dict,
-):
+    metadata: dict[str, Any],
+) -> None:
     from app.services.audit_service import write_audit_log
 
     write_audit_log(

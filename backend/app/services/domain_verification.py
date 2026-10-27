@@ -9,6 +9,7 @@ Supports two verification methods:
 """
 
 from datetime import UTC, datetime
+from typing import Any
 
 import dns.resolver
 import httpx
@@ -159,7 +160,7 @@ async def verify_domain_ownership(
 
 async def perform_verification(
     domain: Domain,
-    db,
+    db: Any,
     user_id: str | None = None,
     ip: str | None = None,
     user_agent: str | None = None,
@@ -225,14 +226,13 @@ async def perform_verification(
 
 async def reverify_domain(
     domain: Domain,
-    db,
+    db: Any,
 ) -> tuple[bool, str | None]:
     """Re-verify a domain that was previously verified.
 
     Used by the periodic re-verification task. On failure, sets domain
     status to SUSPENDED.
     """
-
     success, reason = await verify_domain_ownership(
         root_domain=domain.root_domain,
         token=domain.verification_token,

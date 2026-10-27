@@ -3,6 +3,8 @@
 Request/response models for user management (admin only).
 """
 
+from typing import Any
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -43,5 +45,5 @@ class AuditLogResponse(BaseModel):
     resource_id: str | None
     ip: str | None
     user_agent: str | None
-    metadata: dict | None
+    metadata: dict[str, Any] | None
     created_at: str

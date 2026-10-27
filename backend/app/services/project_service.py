@@ -3,6 +3,8 @@
 Project business logic with ownership enforcement.
 """
 
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.models.project import Project
@@ -79,7 +81,7 @@ class ProjectService:
         if not project:
             return None
 
-        updated_fields = {}
+        updated_fields: dict[str, Any] = {}
         if name is not None:
             updated_fields["name"] = {"old": project.name, "new": name}
             project.name = name

@@ -4,8 +4,8 @@
 [ ] T-001 Init git repo, .gitignore, .editorconfig, pre-commit (ruff, eslint, gitleaks)
 [ ] T-002 Backend skeleton: FastAPI app, config via pydantic-settings, /health, structured JSON logging
 [ ] T-003 docker-compose: api, worker, beat, web, postgres, redis, zap, scanner-tools with healthchecks and resource limits
-[ ] T-004 Alembic setup and base migration; pytest skeleton with test DB fixture
-[ ] T-005 Next.js 14 App Router skeleton with TypeScript, Tailwind, design tokens from DESIGN.md
+[x] T-004 Alembic setup and base migration; pytest skeleton with test DB fixture
+[x] T-005 Next.js 14 App Router skeleton with TypeScript, Tailwind, design tokens from DESIGN.md
 
 ## Security Foundation
 [ ] T-006 Password hashing (argon2), JWT access (15m) + refresh (httpOnly, Secure, SameSite=Strict cookie, rotation)

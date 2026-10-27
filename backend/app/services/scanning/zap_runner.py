@@ -4,6 +4,10 @@ Runs ZAP in daemon mode with non-destructive policy.
 Uses ZAP API client. Attack strength LOW/MEDIUM, no destructive rules.
 """
 
+import time
+from typing import Any
+from urllib.parse import urlparse
+
 import httpx
 
 from app.core.logging import get_logger
@@ -20,7 +24,7 @@ class ZapRunner:
         zap_url: str = "http://zap:8090",
         api_key: str = "",
         timeout_seconds: int = 300,
-    ):
+    ) -> None:
         self.zap_url = zap_url.rstrip("/")
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
@@ -29,8 +33,8 @@ class ZapRunner:
         self,
         method: str,
         path: str,
-        params: dict | None = None,
-    ) -> dict:
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make a request to the ZAP API."""
         params = params or {}
         if self.api_key:
@@ -40,7 +44,11 @@ class ZapRunner:
         try:
             with httpx.Client(timeout=30) as client:
                 response = client.request(method, url, params=params)
-            return response.json() if response.content else {}
+            return (
+                response.json()
+                if response.content
+                else {}
+            )
         except Exception as exc:
             logger.exception("zap api error", path=path, error=str(exc))
             return {"error": str(exc)}
@@ -49,7 +57,7 @@ class ZapRunner:
         self,
         target_url: str,
         policy_name: str = "safe policy",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Run an active scan with non-destructive policy.
 
         Security:
@@ -57,9 +65,6 @@ class ZapRunner:
         - No destructive rules
         - Target validated before scanning
         """
-
-        from urllib.parse import urlparse
-
         parsed = urlparse(target_url)
         hostname = parsed.hostname or ""
         valid, reason = validate_hostname(hostname)
@@ -67,7 +72,7 @@ class ZapRunner:
             return {"error": reason, "target": target_url}
 
         # Start active scan
-        scan_params = {
+        scan_params: dict[str, Any] = {
             "url": target_url,
             "recurse": "true",
             "inScopeOnly": "true",
@@ -83,8 +88,6 @@ class ZapRunner:
             }
 
         # Poll for completion
-        import time
-
         elapsed = 0
         while elapsed < self.timeout_seconds:
             status_result = self._request(

@@ -5,6 +5,9 @@ Ownership checks enforced: admins see all, others see only their own.
 Returns 404 (not 403) for resources the user does not own (IDOR protection).
 """
 
+from typing import Any
+
+import redis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -28,7 +31,7 @@ def get_project_service(db: Session = Depends(get_db)) -> ProjectService:
 
 def get_auth_service(
     db: Session = Depends(get_db),
-    redis=Depends(get_redis),
+    redis: redis.Redis = Depends(get_redis),
 ) -> AuthService:
     return AuthService(db=db, redis_client=redis)
 
@@ -44,13 +47,13 @@ async def create_project(
     project_data: CreateProjectRequest,
     project_svc: ProjectService = Depends(get_project_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> ProjectResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     project = project_svc.create_project(
-        owner_id=current_user.get("user_id"),
+        owner_id=str(current_user["user_id"]),
         name=project_data.name,
         description=project_data.description,
         ip=client_ip,
@@ -72,10 +75,10 @@ async def create_project(
 )
 async def list_projects(
     project_svc: ProjectService = Depends(get_project_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> list[ProjectResponse]:
     projects = project_svc.list_projects(
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
     return [
@@ -98,11 +101,11 @@ async def list_projects(
 async def get_project(
     project_id: str,
     project_svc: ProjectService = Depends(get_project_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> ProjectResponse:
     project = project_svc.get_project(
         project_id=project_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
     if not project:
@@ -130,14 +133,14 @@ async def update_project(
     project_data: UpdateProjectRequest,
     project_svc: ProjectService = Depends(get_project_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> ProjectResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     project = project_svc.update_project(
         project_id=project_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
         name=project_data.name,
         description=project_data.description,
@@ -168,14 +171,14 @@ async def delete_project(
     project_id: str,
     project_svc: ProjectService = Depends(get_project_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> None:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     success = project_svc.delete_project(
         project_id=project_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
         ip=client_ip,
         user_agent=user_agent,

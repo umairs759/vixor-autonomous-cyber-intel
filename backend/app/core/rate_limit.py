@@ -37,7 +37,7 @@ class RateLimiter:
         pipe.zadd(key, {str(now): now})
         # Set expiry on the key
         pipe.expire(key, window_seconds)
-        results = pipe.execute()
+        results = pipe.execute()  # type: ignore[no-untyped-call]
 
         current_count = results[1]
         allowed = current_count < limit

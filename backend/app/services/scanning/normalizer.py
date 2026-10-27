@@ -5,6 +5,7 @@ Deduplication by fingerprint is handled separately.
 """
 
 import hashlib
+from typing import Any
 
 from app.core.logging import get_logger
 
@@ -29,9 +30,9 @@ def compute_fingerprint(
 
 
 def normalize_nmap(
-    scan_data: dict,
+    scan_data: dict[str, Any],
     hostname: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Normalize Nmap output into unified findings.
 
     Args:
@@ -41,7 +42,7 @@ def normalize_nmap(
     Returns:
         List of normalized findings.
     """
-    findings: list[dict] = []
+    findings: list[dict[str, Any]] = []
 
     # Nmap JSON structure varies; extract port/service info
     host_data = scan_data.get("scan", {}).get(hostname, {})
@@ -89,11 +90,11 @@ def normalize_nmap(
 
 
 def normalize_zap(
-    zap_alerts: list[dict],
+    zap_alerts: list[dict[str, Any]],
     hostname: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Normalize ZAP alert output into unified findings."""
-    findings: list[dict] = []
+    findings: list[dict[str, Any]] = []
 
     for alert in zap_alerts:
         title = alert.get("alert", "ZAP finding")
@@ -127,11 +128,11 @@ def normalize_zap(
 
 
 def normalize_nuclei(
-    nuclei_results: list[dict],
+    nuclei_results: list[dict[str, Any]],
     hostname: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Normalize Nuclei JSONL output into unified findings."""
-    findings: list[dict] = []
+    findings: list[dict[str, Any]] = []
 
     for result in nuclei_results:
         template_id = result.get("template-id", "unknown")

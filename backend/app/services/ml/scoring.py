@@ -7,7 +7,7 @@ Falls back to rule-based scoring if model is missing.
 import os
 from typing import Any
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 import numpy as np
 
 from app.core.logging import get_logger
@@ -26,8 +26,8 @@ class ScoringService:
     ):
         self.model_path = model_path
         self.model_version = model_version
-        self.model = None
-        self.model_type = None
+        self.model: Any = None
+        self.model_type: str | None = None
         self._load_model()
 
     def _load_model(self) -> None:
@@ -70,7 +70,9 @@ class ScoringService:
         features: dict[str, Any],
     ) -> dict[str, Any]:
         """Score using the trained ML model."""
-        feature_vec = np.array([[features.get(name, 0.0) for name in feature_names()]])
+        feature_vec = np.array(
+            [[features.get(name, 0.0) for name in feature_names()]]
+        )
 
         try:
             # Get prediction (0-1 probability)
@@ -105,7 +107,7 @@ class ScoringService:
     ) -> dict[str, Any]:
         """Fallback rule-based scoring when ML model is unavailable."""
         # Weighted rule-based score
-        weights = {
+        weights: dict[str, float] = {
             "cvss_base": 0.25,
             "in_cisa_kev": 0.20,
             "epss_score": 0.15,
@@ -129,7 +131,7 @@ class ScoringService:
         score = max(0.0, min(100.0, score))
 
         # SHAP-like contributions (simplified)
-        shap_values = {}
+        shap_values: dict[str, float] = {}
         for feature, weight in weights.items():
             val = features.get(feature, 0.0)
             if isinstance(val, bool):
@@ -165,7 +167,7 @@ class ScoringService:
     ) -> dict[str, float]:
         """Compute SHAP values using TreeExplainer if available."""
         try:
-            import shap
+            import shap  # type: ignore[import-untyped]
 
             explainer = shap.TreeExplainer(self.model)
             shap_values = explainer.shap_values(feature_vec)
@@ -174,7 +176,7 @@ class ScoringService:
                 # Multi-class: take the positive class
                 shap_values = shap_values[1]
 
-            shap_dict = {}
+            shap_dict: dict[str, float] = {}
             for i, name in enumerate(feature_names()):
                 shap_dict[name] = round(float(shap_values[0][i]), 4)
 

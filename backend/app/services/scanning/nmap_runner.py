@@ -6,6 +6,7 @@ No exploit scripts. Uses subprocess with shell=False and allowlisted args.
 
 import json
 import subprocess
+from typing import Any
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -16,7 +17,7 @@ logger = get_logger("scanning.nmap")
 def run_nmap(
     hostname: str,
     timeout_seconds: int = 300,
-) -> dict:
+) -> dict[str, Any]:
     """Run Nmap service detection on a host.
 
     Security:

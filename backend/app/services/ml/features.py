@@ -11,8 +11,8 @@ logger = get_logger("ml.features")
 
 
 def extract_features(
-    finding: dict,
-    finding_score: dict | None = None,
+    finding: dict[str, Any],
+    finding_score: dict[str, Any] | None = None,
     asset_sensitivity: float = 0.5,
     recurrence_count: int = 0,
     is_in_cisa_kev: bool = False,
@@ -37,7 +37,7 @@ def extract_features(
     Returns a dict of feature names to numeric values.
     """
     # Service port risk mapping
-    port_risk_map = {
+    port_risk_map: dict[str, float] = {
         "21": 0.6,  # FTP
         "22": 0.3,  # SSH
         "23": 0.8,  # Telnet
@@ -57,7 +57,7 @@ def extract_features(
     port = str(evidence.get("port", "0"))
 
     # Template severity to numeric
-    severity_map = {"low": 0.25, "medium": 0.5, "high": 0.75, "critical": 1.0}
+    severity_map: dict[str, float] = {"low": 0.25, "medium": 0.5, "high": 0.75, "critical": 1.0}
     template_sev_val = severity_map.get(template_severity.lower(), 0.5)
 
     features: dict[str, Any] = {

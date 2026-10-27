@@ -7,6 +7,9 @@ GET /domains/{id} — get domain details (ownership-checked).
 All endpoints enforce ownership checks (IDOR protection).
 """
 
+from typing import Any
+
+import redis
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -31,7 +34,7 @@ def get_domain_service(db: Session = Depends(get_db)) -> DomainService:
 
 def get_auth_service(
     db: Session = Depends(get_db),
-    redis=Depends(get_redis),
+    redis: redis.Redis = Depends(get_redis),
 ) -> AuthService:
     return AuthService(db=db, redis_client=redis)
 
@@ -48,8 +51,8 @@ async def register_domain(
     domain_data: RegisterDomainRequest,
     domain_svc: DomainService = Depends(get_domain_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> DomainResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
@@ -59,7 +62,7 @@ async def register_domain(
     project_svc = ProjectService(auth.db)
     project = project_svc.get_project(
         project_id=project_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
     if not project:
@@ -70,7 +73,7 @@ async def register_domain(
 
     domain = domain_svc.register_domain(
         project_id=project_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         root_domain=domain_data.root_domain,
         verification_method=domain_data.verification_method,
         ip=client_ip,
@@ -97,11 +100,11 @@ async def register_domain(
 async def list_domains(
     project_id: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> list[DomainResponse]:
     domains = domain_svc.list_domains(
         project_id=project_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
     return [
@@ -131,14 +134,14 @@ async def verify_domain(
     verify_data: VerifyDomainRequest,
     domain_svc: DomainService = Depends(get_domain_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> DomainResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     domain = domain_svc.get_domain(
         domain_id=domain_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
     if not domain:
@@ -162,7 +165,7 @@ async def verify_domain(
     success, reason = await perform_verification(
         domain=domain,
         db=auth.db,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         ip=client_ip,
         user_agent=user_agent,
     )
@@ -197,11 +200,11 @@ async def verify_domain(
 async def get_domain(
     domain_id: str,
     domain_svc: DomainService = Depends(get_domain_service),
-    current_user: dict = Depends(RequireViewer),
-):
+    current_user: dict[str, Any] = Depends(RequireViewer),
+) -> DomainResponse:
     domain = domain_svc.get_domain(
         domain_id=domain_id,
-        user_id=current_user.get("user_id"),
+        user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
     if not domain:

@@ -7,19 +7,21 @@ RBAC dependencies for FastAPI. Roles: admin, analyst, viewer.
 """
 
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 
 from app.deps import get_current_user
 
 
-def require_role(required_role: str) -> Callable:
+def require_role(required_role: str) -> Callable[[dict[str, Any]], dict[str, Any]]:
     """Return a dependency that requires the given role (or higher)."""
 
     role_hierarchy = {"viewer": 0, "analyst": 1, "admin": 2}
 
-    def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
+    def role_checker(
+        current_user: dict[str, Any] = Depends(get_current_user),
+    ) -> dict[str, Any]:
         user_role = current_user.get("role", "viewer")
         if role_hierarchy.get(user_role, 0) < role_hierarchy.get(required_role, 0):
             raise HTTPException(
@@ -32,6 +34,6 @@ def require_role(required_role: str) -> Callable:
 
 
 # Common dependencies
-RequireAdmin = Annotated[dict, Depends(require_role("admin"))]
-RequireAnalyst = Annotated[dict, Depends(require_role("analyst"))]
-RequireViewer = Annotated[dict, Depends(require_role("viewer"))]
+RequireAdmin = Annotated[dict[str, Any], Depends(require_role("admin"))]
+RequireAnalyst = Annotated[dict[str, Any], Depends(require_role("analyst"))]
+RequireViewer = Annotated[dict[str, Any], Depends(require_role("viewer"))]

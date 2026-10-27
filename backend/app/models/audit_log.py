@@ -4,13 +4,18 @@ Append-only security log for every state-changing action.
 No UPDATE/DELETE grants on this table in production.
 """
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class AuditLog(Base, TimestampMixin):
@@ -31,7 +36,7 @@ class AuditLog(Base, TimestampMixin):
     user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
     event_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
-    user: Mapped[Optional["User"]] = relationship(  # noqa: F821
+    user: Mapped[User | None] = relationship(
         "User", back_populates="audit_entries", foreign_keys=[user_id]
     )
 

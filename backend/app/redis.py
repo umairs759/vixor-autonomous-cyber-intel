@@ -4,14 +4,16 @@ Provides a Redis client for rate limiting, Celery broker, and pub/sub.
 """
 
 import redis
+from redis import Redis
 
 from app.config import get_settings
 
 
-def get_redis_client() -> redis.Redis:
+def get_redis_client() -> Redis:
     """Create a Redis client from settings."""
     settings = get_settings()
-    return redis.from_url(settings.REDIS_URL, decode_responses=True)
+    client = redis.from_url(settings.REDIS_URL, decode_responses=True)  # type: ignore[no-untyped-call]
+    return client  # type: ignore[no-any-return]
 
 
 # For dependency injection in routes

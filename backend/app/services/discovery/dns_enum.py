@@ -3,6 +3,8 @@
 Performs DNS A record resolution for subdomains and detects wildcard DNS.
 """
 
+from typing import Any
+
 import dns.resolver
 
 from app.core.logging import get_logger
@@ -48,7 +50,7 @@ def enumerate_dns(domain: str, subdomains: list[str]) -> dict[str, list[str]]:
     Returns mapping of hostname -> list of IPs.
     Wildcard DNS is detected and reported separately.
     """
-    results: dict[str, list[str]] = {}
+    results: dict[str, Any] = {}
     wildcard = detect_wildcard(domain)
 
     for sub in subdomains:

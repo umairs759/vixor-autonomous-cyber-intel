@@ -3,6 +3,8 @@
 Classifies findings per scan cycle as NEW, RECURRING, REINTRODUCED, or RESOLVED.
 """
 
+from typing import Any
+
 from app.core.logging import get_logger
 from app.models.asset import Asset
 from app.models.finding import Finding
@@ -14,7 +16,7 @@ logger = get_logger("ml.regression")
 class RegressionEngine:
     """Classifies findings across scan cycles."""
 
-    def __init__(self, db_session):
+    def __init__(self, db_session: Any) -> None:
         self.db = db_session
 
     def classify_finding(
@@ -78,7 +80,7 @@ class RegressionEngine:
         self,
         scan_id: str,
         previous_scan_id: str | None = None,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Classify all findings in a scan cycle.
 
         Returns list of classification results.
@@ -87,7 +89,7 @@ class RegressionEngine:
 
         findings = self.db.query(Finding).filter(Finding.scan_id == scan_id).all()
 
-        results: list[dict] = []
+        results: list[dict[str, Any]] = []
         for finding in findings:
             asset = self.db.query(Asset).filter(Asset.id == finding.asset_id).first()
             if not asset:

@@ -6,7 +6,7 @@ correlations, reports, schedules must be scoped through the owning
 project. Returns 404 (not 403) for resources the user does not own.
 """
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Query
@@ -61,7 +61,7 @@ def check_ownership(
 
 
 def get_current_user_id(
-    current_user: dict = Depends(lambda: {"user_id": "", "role": "viewer"}),
-) -> dict:
+    current_user: dict[str, Any] = Depends(lambda: {"user_id": "", "role": "viewer"}),
+) -> dict[str, Any]:
     """Extract user ID and role from the current user dependency."""
     return current_user

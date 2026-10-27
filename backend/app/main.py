@@ -6,11 +6,12 @@ headers, and registers API routers. Health check is available at /health.
 
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
@@ -24,7 +25,9 @@ settings = get_settings()
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Attach a unique request ID to every request and log it."""
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
         structlog.contextvars.bind_contextvars(request_id=request_id)
         start = time.time()
@@ -53,7 +56,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add hardening security headers to every response."""
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -92,7 +97,7 @@ def create_app() -> FastAPI:
     )
 
     @app.get("/health", tags=["health"])
-    async def health():
+    async def health() -> dict[str, str]:
         return {"status": "ok", "service": "vixor-api"}
 
     # API routers

@@ -7,6 +7,8 @@ JSONL output parsing.
 
 import json
 import subprocess
+from typing import Any
+from urllib.parse import urlparse
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -20,7 +22,7 @@ NUCLEI_EXCLUDED_TAGS = "dos,intrusive,fuzz,bruteforce"
 def run_nuclei(
     target_url: str,
     timeout_seconds: int = 300,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Run Nuclei with safe templates only.
 
     Security:
@@ -33,8 +35,6 @@ def run_nuclei(
     Returns:
         List of findings from Nuclei.
     """
-    from urllib.parse import urlparse
-
     parsed = urlparse(target_url)
     hostname = parsed.hostname or ""
 
@@ -79,7 +79,7 @@ def run_nuclei(
             }
         ]
 
-    findings: list[dict] = []
+    findings: list[dict[str, Any]] = []
     for line in result.stdout.strip().splitlines():
         if not line:
             continue

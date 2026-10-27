@@ -1,0 +1,1 @@
+"""VIXOR — Celery workers package."""

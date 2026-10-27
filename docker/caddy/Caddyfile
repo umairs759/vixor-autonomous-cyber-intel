@@ -14,9 +14,10 @@
     redir https://{host}{uri} 308
 }
 
-# API backend
+# API backend (local TLS for demo)
 api.localhost:443, localhost:443 {
     reverse_proxy api:8000
+    tls internal
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"
@@ -28,9 +29,10 @@ api.localhost:443, localhost:443 {
     header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:3000 wss://localhost:3000; frame-ancestors 'none';"
 }
 
-# Frontend web
+# Frontend web (local TLS for demo)
 web.localhost:443 {
     reverse_proxy web:3000
+    tls internal
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"

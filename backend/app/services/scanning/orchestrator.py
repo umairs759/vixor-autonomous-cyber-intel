@@ -6,6 +6,7 @@ scope_guard -> Nmap -> ZAP -> Nuclei -> normalization -> dedupe.
 Handles timeouts, retries, partial-failure handling, and per-project concurrency.
 """
 
+from datetime import UTC
 from typing import Any
 
 from app.core.logging import get_logger
@@ -29,7 +30,7 @@ class ScanOrchestrator:
         self,
         zap_runner: ZapRunner | None = None,
         timeout_seconds: int = 1800,
-    ):
+    ) -> None:
         self.zap_runner = zap_runner
         self.timeout_seconds = timeout_seconds
 
@@ -38,8 +39,8 @@ class ScanOrchestrator:
         domain_root: str,
         hostname: str,
         domain_verified: bool,
-        verified_at=None,
-    ) -> dict:
+        verified_at: Any = None,
+    ) -> dict[str, Any]:
         """Run the full scanning pipeline for a single asset.
 
         Returns:
@@ -55,25 +56,22 @@ class ScanOrchestrator:
         }
 
         # Step 1: scope_guard enforcement
-        # Create a minimal domain object for scope check
-        from datetime import UTC
-
-        if domain_verified and verified_at:
-            if verified_at.tzinfo is None:
+        if domain_verified and verified_at is not None:
+            if hasattr(verified_at, "tzinfo") and verified_at.tzinfo is None:
                 verified_at = verified_at.replace(tzinfo=UTC)
         else:
             verified_at = None
 
-        # Build a simple domain-like object
+        # Build a domain-like object for scope check
         class FakeDomain:
-            def __init__(self, root, verified_at_val):
+            def __init__(self, root: str, verified_at_val: Any) -> None:
                 self.root_domain = root
                 self.verified_at = verified_at_val
                 self.status = "verified" if verified_at_val else "unverified"
 
         fake_domain = FakeDomain(domain_root, verified_at)
 
-        in_scope, reason = is_in_scope(fake_domain, hostname)
+        in_scope, reason = is_in_scope(fake_domain, hostname)  # type: ignore[arg-type]
         result["in_scope"] = in_scope
         result["scope_reason"] = reason
 

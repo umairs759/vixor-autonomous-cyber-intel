@@ -6,6 +6,7 @@ Uses subprocess with shell=False and allowlisted arguments.
 
 import json
 import subprocess
+from typing import Any
 
 from app.core.logging import get_logger
 from app.services.scope_guard import validate_hostname
@@ -16,7 +17,7 @@ logger = get_logger("discovery.httpx")
 def probe_host(
     hostname: str,
     timeout_seconds: int = 10,
-) -> dict:
+) -> dict[str, Any]:
     """Run httpx to check if a host is live and detect technologies.
 
     Args:

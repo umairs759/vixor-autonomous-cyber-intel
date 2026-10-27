@@ -35,7 +35,6 @@ import app.models.schedule
 import app.models.user  # noqa: F401
 from app.models.base import Base
 
-
 # Project root (parent of backend/) so the installed alembic package is used
 # instead of the local backend/alembic/ package directory shadowing it.
 _PROJECT_ROOT = os.path.abspath(
