@@ -3,7 +3,7 @@
 ## Setup
 [x] T-001 Init git repo, .gitignore, .editorconfig, pre-commit (ruff, eslint, gitleaks)
 [x] T-002 Backend skeleton: FastAPI app, config via pydantic-settings, /health, structured JSON logging
-[ ] T-003 docker-compose: api, worker, beat, web, postgres, redis, zap, scanner-tools with healthchecks and resource limits
+[x] T-003 docker-compose: api, worker, beat, web, postgres, redis, zap, scanner-tools with healthchecks and resource limits
 [x] T-004 Alembic setup and base migration; pytest skeleton with test DB fixture
 [x] T-005 Next.js 14 App Router skeleton with TypeScript, Tailwind, design tokens from DESIGN.md
 

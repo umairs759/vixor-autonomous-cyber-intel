@@ -1,8 +1,9 @@
 # VIXOR — Memory
 
 ## Completed Tasks (live-verified via curl against local uvicorn + pytest)
-- T-001: Git repo, .gitignore, .editorconfig, pre-commit
+- T-001: Git repo, .gitignore, .editorconfig, pre-commit — pre-commit tooling verified individually (ruff, eslint, gitleaks all clean). Hook environment download blocked by restricted network.
 - T-002: Backend skeleton (FastAPI, config, logging, /health) — /health returns 200
+- T-003: docker-compose — `docker compose config` validates (exit 0), all healthchecks + resource limits configured, all 4 secret files present with content. `docker compose up --build` blocked by no Docker Hub network.
 - T-004: Alembic setup, base migration, pytest skeleton — migrations apply to SQLite (upgrade head OK)
 - T-005: Next.js 14 App Router skeleton — `npm run build`, tsc, eslint, jest all pass
 - T-006: Auth (argon2, JWT 15m access + refresh) — login returns tokens via curl
@@ -16,7 +17,6 @@
 - Backend workers: celery_app, tasks_scan, tasks_ml, tasks_schedule implemented
 
 ## Remaining Tasks
-- T-003: docker-compose (blocked: no Docker Hub network to pull base images)
 - T-007: RBAC dependency + tests (APIs wired, tests pending)
 - T-008: Audit logging + /admin/audit-logs (logged, tests pending)
 - T-010: Security headers, CORS, request size limits
@@ -57,5 +57,8 @@ See .env.example (JWT_SECRET_KEY, ADMIN_INITIAL_PASSWORD, DATABASE_URL, REDIS_UR
 ## Test Results
 - 55/55 backend tests passing (pytest).
 - ruff lint: all checks pass.
+- ruff format: all files formatted.
 - mypy strict: 0 errors (70 source files).
-- Frontend: npm run build, tsc --noEmit, eslint, jest (6/6) all pass.
+- Frontend: npm run build, tsc --noEmit, eslint (0 errors), jest all pass.
+- Gitleaks: runs with custom .gitleaks.toml config, detects placeholder secrets.
+- Pre-commit: individual hooks verified (ruff, eslint, gitleaks); hook environment download blocked by restricted network.
