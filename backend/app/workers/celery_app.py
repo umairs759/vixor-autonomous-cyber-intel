@@ -16,6 +16,7 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
     include=[
         "app.workers.tasks_scan",
+        "app.workers.tasks_discovery",
         "app.workers.tasks_ml",
         "app.workers.tasks_schedule",
     ],

@@ -31,7 +31,7 @@
 [x] T-022 Discovery: CT log client (crt.sh) with caching and timeouts
 [x] T-023 Discovery: DNS enumeration + wildcard detection
 [x] T-024 Discovery: httpx probe (live hosts, technology fingerprinting)
-[ ] T-025 Discovery Celery task + asset inventory API
+[x] T-025 Discovery Celery task + asset inventory API
 [ ] T-026 Nmap runner (safe flags, XML parsing) + normalizer
 [ ] T-027 ZAP runner (non-destructive policy, API client) + normalizer
 [ ] T-028 Nuclei runner (excluded tags, JSONL parsing) + normalizer

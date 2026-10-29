@@ -24,9 +24,10 @@
 - T-022: Discovery: CT log client — 12 unit tests passing with mocked httpx. Domain validation, httpx no-redirect, timeout, JSON parsing, wildcard stripping, deduplication verified.
 - T-023: Discovery: DNS enumeration + wildcard detection — 11 unit tests passing with mocked dns.resolver. A record resolution, wildcard detection, subdomain enumeration verified.
 - T-024: Discovery: httpx probe — 8 unit tests passing with mocked subprocess. Hostname validation, shell=False, JSON/plain output parsing verified.
+- T-025: Discovery Celery task + asset inventory API — `run_discovery` chains subfinder → CT logs → DNS → httpx with scope_guard, fully mocked (no live network). Asset inventory API `GET /api/v1/domains/{id}/assets` registered + ownership-checked. ruff clean, mypy 0 errors, 151 backend tests pass.
 
 ## Remaining Tasks
-- T-025 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
+- T-026 to T-028: Discovery and scanning pipeline (code present, binaries not available locally)
 - T-029 to T-031: Scan orchestrator, dedupe, progress (workers implemented)
 - T-032 to T-036: ML dataset + training + scoring + SHAP + narratives (trained, needs wired scan flow)
 - T-037 to T-038: Regression and correlation engines (code present, tests pending)
