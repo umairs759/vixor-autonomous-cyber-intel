@@ -37,7 +37,7 @@
 [x] T-028 Nuclei runner (excluded tags, JSONL parsing) + normalizer
 [x] T-029 Scan orchestrator: Celery chain, timeouts, retries, partial-failure handling, per-project concurrency
 [x] T-030 Finding dedupe by fingerprint
-[ ] T-031 Redis pub/sub progress + WebSocket endpoint (auth required)
+[x] T-031 Redis pub/sub progress + WebSocket endpoint (auth required)
 [ ] T-032 ML data: fetch NVD, EPSS, CISA KEV; build_dataset with documented labeling strategy
 [ ] T-033 ML training: RandomForest + XGBoost, evaluation report, versioned artifacts
 [ ] T-034 Feature extraction service for live findings

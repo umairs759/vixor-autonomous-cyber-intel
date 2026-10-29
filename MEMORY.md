@@ -30,9 +30,9 @@
 - T-028: Nuclei runner + normalizer — `run_nuclei` excluded tags dos/intrusive/fuzz/bruteforce, shell=False, JSONL parsing. 8 mocked subprocess tests pass. 185 backend tests pass.
 - T-029: Scan orchestrator — `ScanOrchestrator.scan_asset` scope_guard enforced, Nmap→ZAP(optional)→Nuclei, partial-failure handling, completed/partial/failed status. 5 mocked tests pass. 190 backend tests pass.
 - T-030: Finding dedupe by fingerprint — `dedupe_findings` scopes by fingerprint (optional scan_id/asset_id), skips existing DB records. 6 unit tests pass. 196 backend tests pass.
+- T-031: Redis pub/sub + WebSocket progress — authenticated JWT WebSocket `/api/v1/scans/{id}/ws` with domain ownership check, Redis pub/sub forwarding + heartbeat. 5 mocked tests pass. 201 backend tests pass.
 
 ## Remaining Tasks
-- T-031: Redis pub/sub progress + WebSocket endpoint (auth required)
 - T-032 to T-036: ML dataset + training + scoring + SHAP + narratives (trained, needs wired scan flow)
 - T-037 to T-038: Regression and correlation engines (code present, tests pending)
 - T-039 to T-041: Dashboard APIs, PDF reports, scheduling (APIs present, tests pending)

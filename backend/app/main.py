@@ -116,6 +116,7 @@ def create_app() -> FastAPI:
     from app.api.v1 import scans as scans_api
     from app.api.v1 import schedules as schedules_api
     from app.api.v1 import users as users_api
+    from app.api.v1 import ws as ws_api
 
     app.include_router(auth_api.router, prefix="/api/v1")
     app.include_router(users_api.router, prefix="/api/v1")
@@ -128,6 +129,7 @@ def create_app() -> FastAPI:
     app.include_router(reports_api.router, prefix="/api/v1")
     app.include_router(schedules_api.router, prefix="/api/v1")
     app.include_router(dashboard_api.router, prefix="/api/v1")
+    app.include_router(ws_api.router, prefix="/api/v1")
 
     return app
 
