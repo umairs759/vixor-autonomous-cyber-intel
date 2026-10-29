@@ -12,7 +12,7 @@ from app.services.regression_engine import RegressionEngine
 
 
 def _setup(db, suffix="1"):
-    _user = User(email=f"u{suffix}-{uuid.uuid4()}@example.com", password_hash="x", role="admin")
+    user = User(email=f"u{suffix}-{uuid.uuid4()}@example.com", password_hash="x", role="admin")
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -46,7 +46,7 @@ def _setup(db, suffix="1"):
 
 
 def test_regression_new(db_session):
-    project, domain, asset, scan1 = _setup(db_session, "a")
+    _project, _domain, asset, scan1 = _setup(db_session, "a")
     finding = Finding(
         asset_id=asset.id, scan_id=scan1.id, fingerprint="fp1", title="t", description="d", severity_raw="low", source_tool="nmap"
     )
