@@ -32,4 +32,10 @@ celery_app.conf.update(
     task_time_limit=settings.SCAN_TOOL_TIMEOUT_SECONDS,
     worker_max_tasks_per_child=50,
     broker_connection_retry_on_startup=True,
+    beat_schedule={
+        "dispatch-due-schedules": {
+            "task": "app.workers.tasks_schedule.dispatch_due_schedules",
+            "schedule": 60.0,
+        },
+    },
 )

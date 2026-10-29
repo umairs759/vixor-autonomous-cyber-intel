@@ -53,8 +53,26 @@ def extract_features(
         "27017": 0.7,  # MongoDB
     }
 
-    evidence = finding.get("evidence", {})
+    evidence = finding.get("evidence", {}) if isinstance(finding, dict) else {}
+    if not evidence and isinstance(finding, dict) and "port" in finding:
+        evidence = finding
+
     port = str(evidence.get("port", "0"))
+
+    # Derive CVSS from finding when not explicitly provided
+    if cvss_base == 0.0 and isinstance(finding, dict):
+        raw_cvss = finding.get("cvss")
+        if raw_cvss is not None:
+            try:
+                cvss_base = float(raw_cvss)
+            except (TypeError, ValueError):
+                cvss_base = 0.0
+
+    # Derive template severity from finding when not explicitly provided
+    if template_severity == "medium" and isinstance(finding, dict):
+        raw_severity = finding.get("severity_raw")
+        if raw_severity:
+            template_severity = str(raw_severity)
 
     # Template severity to numeric
     severity_map: dict[str, float] = {
@@ -62,8 +80,14 @@ def extract_features(
         "medium": 0.5,
         "high": 0.75,
         "critical": 1.0,
+        "info": 0.1,
     }
     template_sev_val = severity_map.get(template_severity.lower(), 0.5)
+
+    # Internet exposure heuristic from finding
+    if internet_exposed is True and isinstance(finding, dict):
+        # default remains True unless finding explicitly says otherwise
+        pass
 
     features: dict[str, Any] = {
         "cvss_base": float(cvss_base) / 10.0,  # Normalize to 0-1

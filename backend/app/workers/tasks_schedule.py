@@ -18,6 +18,7 @@ from app.workers.tasks_scan import run_scan
 logger = get_logger("workers.schedule")
 
 
+
 @celery_app.task(name="app.workers.tasks_schedule.run_scheduled_scan")  # type: ignore[untyped-decorator]
 def run_scheduled_scan(domain_id: str) -> dict[str, Any]:
     """Run a scheduled scan for a domain after confirming ownership.
@@ -91,5 +92,30 @@ def run_scheduled_scan(domain_id: str) -> dict[str, Any]:
     except Exception as exc:
         logger.exception("scheduled_scan_failed", domain_id=domain_id, error=str(exc))
         return {"domain_id": domain_id, "status": "failed", "error": str(exc)}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="app.workers.tasks_schedule.dispatch_due_schedules")  # type: ignore[untyped-decorator]
+def dispatch_due_schedules() -> dict[str, Any]:
+    """Periodic Celery Beat entrypoint: dispatch all active scheduled scans.
+
+    Each dispatched run re-verifies domain ownership before scanning.
+    """
+    db = get_session_factory()()
+    try:
+        from app.models.schedule import ScanSchedule
+
+        schedules = db.query(ScanSchedule).filter(ScanSchedule.is_active.is_(True)).all()
+        dispatched = 0
+        for schedule in schedules:
+            run_scheduled_scan.delay(str(schedule.domain_id))
+            schedule.last_run_at = datetime.now(UTC)
+            dispatched += 1
+        db.commit()
+        return {"dispatched": dispatched}
+    except Exception as exc:
+        logger.exception("dispatch_due_schedules_failed", error=str(exc))
+        return {"dispatched": 0, "error": str(exc)}
     finally:
         db.close()

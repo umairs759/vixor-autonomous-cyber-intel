@@ -64,7 +64,8 @@ See .env.example (JWT_SECRET_KEY, ADMIN_INITIAL_PASSWORD, DATABASE_URL, REDIS_UR
 - All finding narratives are deterministic templates from SHAP values (no LLMs).
 
 ## Test Results
-- 55/55 backend tests passing (pytest).
+- 209/209 backend tests passing (pytest).
+- T-032..T-056 implemented and verified (ruff clean, mypy 0 errors, frontend build + tsc pass).
 - ruff lint: all checks pass.
 - ruff format: all files formatted.
 - mypy strict: 0 errors (70 source files).

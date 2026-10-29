@@ -83,11 +83,17 @@ class RegressionEngine:
     ) -> list[dict[str, Any]]:
         """Classify all findings in a scan cycle.
 
+        Current findings are classified as NEW, RECURRING, or
+        REINTRODUCED. Findings present in the previous scan but absent
+        from the current one are classified as RESOLVED.
+
         Returns list of classification results.
         """
         from app.models.asset import Asset
 
         findings = self.db.query(Finding).filter(Finding.scan_id == scan_id).all()
+
+        current_fingerprints: set[str] = {f.fingerprint for f in findings if f.fingerprint}
 
         results: list[dict[str, Any]] = []
         for finding in findings:
@@ -111,5 +117,52 @@ class RegressionEngine:
                     "status": status.value,
                 }
             )
+
+        # Resolve findings that were present in the previous scan but are
+        # absent from the current scan.
+        if previous_scan_id:
+            previous_findings = (
+                self.db.query(Finding)
+                .filter(Finding.scan_id == previous_scan_id)
+                .all()
+            )
+            for prev_finding in previous_findings:
+                if prev_finding.fingerprint in current_fingerprints:
+                    continue
+                asset = self.db.query(Asset).filter(Asset.id == prev_finding.asset_id).first()
+                if not asset:
+                    continue
+
+                # Avoid duplicate resolved entries for the same scan.
+                existing = (
+                    self.db.query(FindingHistory)
+                    .filter(
+                        FindingHistory.scan_id == scan_id,
+                        FindingHistory.fingerprint == prev_finding.fingerprint,
+                        FindingHistory.asset_id == asset.id,
+                    )
+                    .first()
+                )
+                if existing is not None:
+                    continue
+
+                history_entry = FindingHistory(
+                    fingerprint=prev_finding.fingerprint,
+                    asset_id=asset.id,
+                    scan_id=scan_id,
+                    status=HistoryStatus.resolved,
+                )
+                self.db.add(history_entry)
+                self.db.commit()
+
+                results.append(
+                    {
+                        "finding_id": None,
+                        "fingerprint": prev_finding.fingerprint,
+                        "asset_id": asset.id,
+                        "hostname": asset.hostname,
+                        "status": HistoryStatus.resolved.value,
+                    }
+                )
 
         return results

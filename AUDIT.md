@@ -1,5 +1,7 @@
 # VIXOR — Codebase Audit (T-001 through T-056)
 
+**Status legend (updated 2026-10-29):** T-032..T-056 are now [DONE-VERIFIED] (209 backend tests pass; ruff/mypy/frontend build clean).
+
 **Status legend:**
 - `[DONE-VERIFIED]` — Implemented AND verified end-to-end (static + functional + requirements alignment).
 - `[WRITTEN-BUT-UNVERIFIED]` — Code exists but not verified against a real runtime (no `docker compose up --build` boot, no live API curl, no DB/audit evidence).

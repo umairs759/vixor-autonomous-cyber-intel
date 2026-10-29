@@ -38,32 +38,32 @@
 [x] T-029 Scan orchestrator: Celery chain, timeouts, retries, partial-failure handling, per-project concurrency
 [x] T-030 Finding dedupe by fingerprint
 [x] T-031 Redis pub/sub progress + WebSocket endpoint (auth required)
-[ ] T-032 ML data: fetch NVD, EPSS, CISA KEV; build_dataset with documented labeling strategy
-[ ] T-033 ML training: RandomForest + XGBoost, evaluation report, versioned artifacts
-[ ] T-034 Feature extraction service for live findings
-[ ] T-035 Scoring service + fallback rule-based scorer
-[ ] T-036 SHAP explanations + deterministic narrative generator
-[ ] T-037 Regression engine (NEW/RECURRING/REINTRODUCED/RESOLVED) + tests
-[ ] T-038 Correlation engine (rule-based grouping + combined score + narrative) + tests
-[ ] T-039 Dashboard summary and trend endpoints
-[ ] T-040 PDF report service (exec summary, charts, findings, remediation, regression)
-[ ] T-041 Scan scheduling with Celery Beat (re-verify ownership before each run)
+[x] T-032 ML data: fetch NVD, EPSS, CISA KEV; build_dataset with documented labeling strategy
+[x] T-033 ML training: RandomForest + XGBoost, evaluation report, versioned artifacts
+[x] T-034 Feature extraction service for live findings
+[x] T-035 Scoring service + fallback rule-based scorer
+[x] T-036 SHAP explanations + deterministic narrative generator
+[x] T-037 Regression engine (NEW/RECURRING/REINTRODUCED/RESOLVED) + tests
+[x] T-038 Correlation engine (rule-based grouping + combined score + narrative) + tests
+[x] T-039 Dashboard summary and trend endpoints
+[x] T-040 PDF report service (exec summary, charts, findings, remediation, regression)
+[x] T-041 Scan scheduling with Celery Beat (re-verify ownership before each run)
 
 ## UI
-[ ] T-042 Login page, auth context, middleware route protection
-[ ] T-043 App shell: sidebar/bottom tabs, role-aware navigation
-[ ] T-044 Projects and domains pages with verification wizard
-[ ] T-045 Assets inventory page
-[ ] T-046 Scan launch + live progress page
-[ ] T-047 Findings list and detail (risk gauge, SHAP chart, narrative, remediation)
-[ ] T-048 Correlations and regression views
-[ ] T-049 Dashboard (stats, severity distribution, trends) + executive summary view
-[ ] T-050 Reports page + download
-[ ] T-051 Admin: users and audit log pages
+[x] T-042 Login page, auth context, middleware route protection
+[x] T-043 App shell: sidebar/bottom tabs, role-aware navigation
+[x] T-044 Projects and domains pages with verification wizard
+[x] T-045 Assets inventory page
+[x] T-046 Scan launch + live progress page
+[x] T-047 Findings list and detail (risk gauge, SHAP chart, narrative, remediation)
+[x] T-048 Correlations and regression views
+[x] T-049 Dashboard (stats, severity distribution, trends) + executive summary view
+[x] T-050 Reports page + download
+[x] T-051 Admin: users and audit log pages
 
 ## Testing
-[ ] T-052 Unit tests: scope_guard, regression, correlation, feature extraction
-[ ] T-053 Integration tests: auth, RBAC, IDOR, scan flow with mocked scanners
-[ ] T-054 E2E tests (Playwright): login, verify domain, run mocked scan, view findings, download report
-[ ] T-055 Load/limit tests: concurrency and timeout behavior (LI-4)
-[ ] T-056 Final security checklist verification and completion report
+[x] T-052 Unit tests: scope_guard, regression, correlation, feature extraction
+[x] T-053 Integration tests: auth, RBAC, IDOR, scan flow with mocked scanners
+[x] T-054 E2E tests (Playwright): login, verify domain, run mocked scan, view findings, download report
+[x] T-055 Load/limit tests: concurrency and timeout behavior (LI-4)
+[x] T-056 Final security checklist verification and completion report
