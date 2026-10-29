@@ -26,9 +26,10 @@
 - T-024: Discovery: httpx probe — 8 unit tests passing with mocked subprocess. Hostname validation, shell=False, JSON/plain output parsing verified.
 - T-025: Discovery Celery task + asset inventory API — `run_discovery` chains subfinder → CT logs → DNS → httpx with scope_guard, fully mocked (no live network). Asset inventory API `GET /api/v1/domains/{id}/assets` registered + ownership-checked. ruff clean, mypy 0 errors, 151 backend tests pass.
 - T-026: Nmap runner + normalizer — `run_nmap` safe flags (shell=False), normalizer dedupe by fingerprint. 9+9 mocked tests pass. 169 backend tests pass.
+- T-027: ZAP runner + normalizer — `ZapRunner.active_scan` safe policy, non-destructive, httpx shell=False. 8 mocked httpx tests pass. 177 backend tests pass.
 
 ## Remaining Tasks
-- T-027 to T-028: ZAP and Nuclei runners + normalizer (code present, binaries not available locally)
+- T-028: Nuclei runner + normalizer (code present, binaries not available locally)
 - T-029 to T-031: Scan orchestrator, dedupe, progress (workers implemented)
 - T-032 to T-036: ML dataset + training + scoring + SHAP + narratives (trained, needs wired scan flow)
 - T-037 to T-038: Regression and correlation engines (code present, tests pending)

@@ -33,7 +33,7 @@
 [x] T-024 Discovery: httpx probe (live hosts, technology fingerprinting)
 [x] T-025 Discovery Celery task + asset inventory API
 [x] T-026 Nmap runner (safe flags, XML parsing) + normalizer
-[ ] T-027 ZAP runner (non-destructive policy, API client) + normalizer
+[x] T-027 ZAP runner (non-destructive policy, API client) + normalizer
 [ ] T-028 Nuclei runner (excluded tags, JSONL parsing) + normalizer
 [ ] T-029 Scan orchestrator: Celery chain, timeouts, retries, partial-failure handling, per-project concurrency
 [ ] T-030 Finding dedupe by fingerprint
