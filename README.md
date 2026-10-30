@@ -12,7 +12,6 @@
 ### 1. Install Backend Dependencies
 
 ```powershell
-; Generate the full project completion report
 ```
 
 ```powershell
@@ -51,10 +50,10 @@ python -m alembic upgrade head
 
 ```powershell
 cd "C:\Users\usamah\Desktop\VIXOR — Autonomous\backend"
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-The API will be available at `http://localhost:8000/api/v1`.
+The API will be available at `http://127.0.0.1:8001/api/v1`.
 
 ### 5. Start Celery Worker (optional, for background scanning)
 
@@ -71,7 +70,7 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000`.
+The frontend will be available at `http://localhost:3000`. The local API client defaults to `http://127.0.0.1:8001/api/v1`; override `NEXT_PUBLIC_API_BASE_URL` in `frontend/.env.local` when your backend uses another port. Production Compose configuration remains explicit and unchanged.
 
 ### 7. Run Tests
 
@@ -113,7 +112,7 @@ copy .env.example .env
 python -m alembic upgrade head
 
 ; 3. Start API
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 ; 4. Start frontend (new terminal)
 cd ..\frontend
@@ -151,15 +150,4 @@ All scanner commands use `subprocess` with `shell=False` and allowlisted argumen
 
 ## Project Status
 
-**T-001 through T-056**: All tasks implemented, tested, and verified.
-- 209/209 backend pytest tests passing
-- ruff: 0 errors, mypy: 0 errors across 70 source files
-- Frontend: npm run build, tsc --noEmit, eslint all pass
-- Scanning pipeline: ZAP, Nuclei, Nmap runners + orchestrator
-- ML pipeline: XGBoost inference + SHAP deterministic narratives
-- Regression: NEW/RECURRING/REINTRODUCED/RESOLVED classification
-- Correlation: rule-based grouping + combined score + narrative
-- PDF report service: ReportLab export with executive summary, charts, findings
-- Celery Beat: scan scheduling with ownership re-verification
-
-See `AUDIT.md` for per-task verification status and `MEMORY.md` for live-verified progress log.
+Implementation and verification are in progress. See `AUDIT_FINAL.md` for the current pass, blocked, and incomplete items. Do not treat earlier task checkmarks or historical test counts in this README as a current release sign-off.

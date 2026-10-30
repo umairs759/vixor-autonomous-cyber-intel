@@ -60,6 +60,7 @@ def create_access_token(
         "sub": user_id,
         "role": role,
         "jti": jti,
+        "token_type": "access",
         "exp": expire,
         "iat": datetime.now(UTC),
     }

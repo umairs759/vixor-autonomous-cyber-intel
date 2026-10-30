@@ -75,21 +75,21 @@ class CorrelationEngine:
         groups: list[list[Finding]] = []
         used: set[str] = set()
 
-        # Rule 1: Group by same port
+        # Rule 1: Group only findings that identify the same concrete port.
         port_groups: dict[str, list[Finding]] = {}
         for f in findings:
-            if f.id in used:
+            port = f.evidence.get("port") if f.evidence else None
+            if port is None:
                 continue
-            port = f.evidence.get("port", "unknown") if f.evidence else "unknown"
             key = f"port:{port}"
             if key not in port_groups:
                 port_groups[key] = []
             port_groups[key].append(f)
-            used.add(f.id)
 
         for group in port_groups.values():
             if len(group) >= 2:
                 groups.append(group)
+                used.update(f.id for f in group)
 
         # Rule 2: Group web-related findings
         web_keywords = ["xss", "header", "cookie", "csrf", "clickjacking"]
@@ -130,8 +130,16 @@ class CorrelationEngine:
         """
         scores: list[float] = []
         for f in findings:
-            # Use CVSS or severity as base
-            if f.cvss:
+            from app.models.finding_score import FindingScore
+
+            ml_score = (
+                self.db.query(FindingScore.risk_score)
+                .filter(FindingScore.finding_id == f.id)
+                .scalar()
+            )
+            if ml_score is not None:
+                scores.append(float(ml_score))
+            elif f.cvss:
                 scores.append(f.cvss / 10.0 * 100)
             elif f.severity_raw.lower() == "critical":
                 scores.append(90.0)

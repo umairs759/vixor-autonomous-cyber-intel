@@ -60,6 +60,17 @@ async def get_finding(
                 detail="Finding not found.",
             )
 
+        # Get ML risk score
+        from app.models.finding_score import FindingScore
+        score = db.query(FindingScore).filter(FindingScore.finding_id == finding.id).first()
+
+        # Get regression status from finding history
+        from app.models.finding_history import FindingHistory
+        history = db.query(FindingHistory).filter(
+            FindingHistory.fingerprint == finding.fingerprint,
+            FindingHistory.asset_id == finding.asset_id
+        ).order_by(FindingHistory.created_at.desc()).first()
+
         return {
             "id": finding.id,
             "asset_id": finding.asset_id,
@@ -74,6 +85,16 @@ async def get_finding(
             "evidence": finding.evidence,
             "remediation": finding.remediation,
             "created_at": finding.created_at.isoformat(),
+            "score": {
+                "risk_score": score.risk_score if score else None,
+                "risk_class": score.risk_class.value if score else None,
+                "model_version": score.model_version if score else None,
+                "features": score.features if score else {},
+                "shap_values": score.shap_values if score else {},
+                "narrative": score.narrative if score else None,
+                "scored_by": score.scored_by.value if score else None,
+            } if score else None,
+            "regression_status": history.status.value if history else None,
         }
     finally:
         db.close()

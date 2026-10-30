@@ -40,4 +40,3 @@ def get_kev_cve_ids(timeout_seconds: int = 30) -> set[str]:
         if cve_id:
             ids.add(str(cve_id))
     return ids
-PY

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.rbac import require_role
 from app.deps import get_db, get_db_session
 from app.models.schedule import ScanSchedule
+from app.services.cron_schedule import is_valid_cron
 from app.services.domain_service import DomainService
 
 router = APIRouter(prefix="/domains", tags=["schedules"])
@@ -31,6 +32,9 @@ async def create_schedule(
     domain_svc: DomainService = Depends(get_domain_service),
     current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> dict[str, Any]:
+    if not is_valid_cron(cron):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid cron expression.")
+
     domain = domain_svc.get_domain(
         domain_id=domain_id,
         user_id=current_user["user_id"],

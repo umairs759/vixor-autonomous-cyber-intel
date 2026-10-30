@@ -11,7 +11,7 @@ from collections.abc import Awaitable, Callable
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
@@ -20,6 +20,7 @@ from app.core.logging import configure_logging, get_logger
 from app.core.request_size import RequestSizeMiddleware
 
 configure_logging()
+
 logger = get_logger("main")
 settings = get_settings()
 
@@ -80,7 +81,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="VIXOR — Autonomous Vulnerability Intelligence Platform",
         version="0.1.0",
-        docs_url="/api/v1/docs",
+        docs_url="/docs",
         redoc_url="/api/v1/redoc",
         openapi_url="/api/v1/openapi.json",
     )
@@ -95,8 +96,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        allow_methods=["*"],
+        allow_headers=["*"],
         max_age=600,
     )
 
@@ -104,11 +105,16 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok", "service": "vixor-api"}
 
+    @app.get("/api/v1/docs", include_in_schema=False)
+    async def api_docs_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/docs")
+
     # API routers
     from app.api.v1 import assets as assets_api
     from app.api.v1 import auth as auth_api
     from app.api.v1 import correlations as correlations_api
     from app.api.v1 import dashboard as dashboard_api
+    from app.api.v1 import discovery as discovery_api
     from app.api.v1 import domains as domains_api
     from app.api.v1 import findings as findings_api
     from app.api.v1 import projects as projects_api
@@ -129,6 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(reports_api.router, prefix="/api/v1")
     app.include_router(schedules_api.router, prefix="/api/v1")
     app.include_router(dashboard_api.router, prefix="/api/v1")
+    app.include_router(discovery_api.router, prefix="/api/v1")
     app.include_router(ws_api.router, prefix="/api/v1")
 
     return app

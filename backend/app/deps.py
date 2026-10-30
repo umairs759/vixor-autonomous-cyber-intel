@@ -8,7 +8,7 @@ from collections.abc import Generator
 from functools import lru_cache
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt  # type: ignore[import-untyped]
 from sqlalchemy import Engine, create_engine
@@ -20,7 +20,7 @@ from app.core.logging import get_logger
 logger = get_logger("deps")
 
 # OAuth2 bearer scheme for access tokens (Authorization: Bearer <token>)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 @lru_cache
@@ -54,7 +54,8 @@ def get_db_session() -> Session:
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    request: Request,
+    token: Annotated[str | None, Depends(oauth2_scheme)],
 ) -> dict[str, Any]:
     """Validate the access JWT and return the user payload.
 
@@ -66,6 +67,9 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    token = token or request.cookies.get("access_token")
+    if not token:
+        raise credentials_exception
     try:
         secret = settings.JWT_SECRET_KEY
         if secret is None:
@@ -76,6 +80,8 @@ async def get_current_user(
             algorithms=[settings.JWT_ALGORITHM],
             options={"verify_sub": False},
         )
+        if payload.get("token_type", "access") != "access":
+            raise credentials_exception
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception

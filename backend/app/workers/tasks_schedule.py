@@ -1,95 +1,59 @@
-"""VIXOR — Scan scheduling Celery tasks (T-041).
-
-Re-verifies domain ownership before each scheduled scan run, then dispatches
-a scan. Ownership re-verification is mandatory (LI-1, BO-10).
-"""
-
 from datetime import UTC, datetime
 from typing import Any
 
 from app.core.logging import get_logger
 from app.deps import get_session_factory
 from app.models.domain import Domain, DomainStatus
-from app.models.scan import Scan, ScanStatus
-from app.models.scan_asset import ScanAsset
+from app.models.scan import ScanStatus
+from app.models.schedule import ScanSchedule
+from app.services.cron_schedule import is_due, is_valid_cron
+from app.services.scan_admission import ScanConcurrencyLimit, create_queued_scan
 from app.workers.celery_app import celery_app
 from app.workers.tasks_scan import run_scan
 
 logger = get_logger("workers.schedule")
 
 
-
 @celery_app.task(name="app.workers.tasks_schedule.run_scheduled_scan")  # type: ignore[untyped-decorator]
 def run_scheduled_scan(domain_id: str) -> dict[str, Any]:
-    """Run a scheduled scan for a domain after confirming ownership.
-
-    Ownership must be current (verified within the re-verification window)
-    before a scan is dispatched (LI-1, BO-10). If the domain is not currently
-    verified, the scheduled run is skipped.
-    """
+    """Revalidate domain ownership and dispatch a scan for in-scope assets."""
     db = get_session_factory()()
     try:
         domain = db.query(Domain).filter(Domain.id == domain_id).first()
         if not domain:
-            logger.error("domain_not_found_for_schedule", domain_id=domain_id)
-            return {"domain_id": domain_id, "error": "domain not found"}
-
-        # Ownership must be current before dispatching a scheduled scan.
+            return {"domain_id": domain_id, "status": "skipped", "reason": "domain not found"}
         if domain.status != DomainStatus.verified or domain.verified_at is None:
-            logger.warning(
-                "scheduled_scan_skipped_domain_unverified",
+            return {"domain_id": domain_id, "status": "skipped", "reason": "domain ownership not current"}
+        from app.models.asset import Asset, ScopeStatus
+        assets = db.query(Asset).filter(
+            Asset.domain_id == domain_id, Asset.scope_status == ScopeStatus.in_scope
+        ).all()
+        if not assets:
+            return {"domain_id": domain_id, "status": "skipped", "reason": "no in-scope assets"}
+        ids = [str(a.id) for a in assets]
+        try:
+            scan = create_queued_scan(
+                db,
+                project_id=domain.project_id,
                 domain_id=domain_id,
-                status=domain.status.value,
+                triggered_by=domain.project.owner_id,
+                assets=assets,
             )
-            return {
-                "domain_id": domain_id,
-                "status": "skipped",
-                "reason": "domain ownership not current",
-            }
-
-        now = datetime.now(UTC)
-        # Record the scheduled run timestamp if the column exists.
-        if hasattr(domain, "last_run_at"):
-            domain.last_run_at = now
+        except ScanConcurrencyLimit:
+            db.rollback()
+            return {"domain_id": domain_id, "status": "skipped", "reason": "project concurrency limit reached"}
         db.commit()
-
-        # Dispatch a scan for the domain's assets
-        from app.models.asset import Asset
-
-        assets = db.query(Asset).filter(Asset.domain_id == domain_id).all()
-        asset_ids = [str(a.id) for a in assets]
-
-        if not asset_ids:
-            logger.warning("scheduled_scan_no_assets", domain_id=domain_id)
-            return {
-                "domain_id": domain_id,
-                "status": "skipped",
-                "reason": "no assets discovered",
-            }
-
-        scan = Scan(
-            project_id=domain.project_id,
-            domain_id=domain_id,
-            triggered_by=None,
-            status=ScanStatus.queued,
-        )
-        db.add(scan)
-        db.commit()
-        db.refresh(scan)
-
-        for asset_id in asset_ids:
-            db.add(ScanAsset(scan_id=scan.id, asset_id=asset_id, status="pending"))
-        db.commit()
-
-        # Dispatch the async scan pipeline
-        run_scan.delay(str(scan.id), domain_id, asset_ids)
-
-        return {
-            "domain_id": domain_id,
-            "status": "dispatched",
-            "scan_id": str(scan.id),
-        }
+        try:
+            run_scan.delay(str(scan.id), domain_id, ids)
+        except Exception:
+            scan.status = ScanStatus.failed
+            scan.finished_at = datetime.now(UTC)
+            scan.error_summary = "Scheduled scan task could not be dispatched."
+            db.commit()
+            raise
+        return {"domain_id": domain_id, "status": "dispatched", "scan_id": str(scan.id)}
     except Exception as exc:
+        db.rollback()
         logger.exception("scheduled_scan_failed", domain_id=domain_id, error=str(exc))
         return {"domain_id": domain_id, "status": "failed", "error": str(exc)}
     finally:
@@ -98,23 +62,28 @@ def run_scheduled_scan(domain_id: str) -> dict[str, Any]:
 
 @celery_app.task(name="app.workers.tasks_schedule.dispatch_due_schedules")  # type: ignore[untyped-decorator]
 def dispatch_due_schedules() -> dict[str, Any]:
-    """Periodic Celery Beat entrypoint: dispatch all active scheduled scans.
-
-    Each dispatched run re-verifies domain ownership before scanning.
-    """
+    """Dispatch only schedules whose five-field cron expression is due."""
     db = get_session_factory()()
     try:
-        from app.models.schedule import ScanSchedule
-
+        now = datetime.now(UTC)
         schedules = db.query(ScanSchedule).filter(ScanSchedule.is_active.is_(True)).all()
-        dispatched = 0
+        due: list[ScanSchedule] = []
         for schedule in schedules:
+            try:
+                if not is_valid_cron(schedule.cron):
+                    logger.warning("invalid_scan_schedule_cron", schedule_id=schedule.id)
+                    continue
+                if is_due(schedule.cron, now, schedule.last_run_at):
+                    due.append(schedule)
+            except (ValueError, KeyError, TypeError):
+                logger.warning("invalid_scan_schedule_cron", schedule_id=schedule.id)
+        for schedule in due:
             run_scheduled_scan.delay(str(schedule.domain_id))
-            schedule.last_run_at = datetime.now(UTC)
-            dispatched += 1
+            schedule.last_run_at = now
         db.commit()
-        return {"dispatched": dispatched}
+        return {"dispatched": len(due)}
     except Exception as exc:
+        db.rollback()
         logger.exception("dispatch_due_schedules_failed", error=str(exc))
         return {"dispatched": 0, "error": str(exc)}
     finally:

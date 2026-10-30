@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Copy dependency manifests first for layer caching
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy application code
 COPY . .
@@ -23,4 +23,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "if [ -n \"$JWT_SECRET_KEY_FILE\" ] && [ -r \"$JWT_SECRET_KEY_FILE\" ]; then export JWT_SECRET_KEY=\"$(cat \"$JWT_SECRET_KEY_FILE\")\"; fi; exec npm start"]

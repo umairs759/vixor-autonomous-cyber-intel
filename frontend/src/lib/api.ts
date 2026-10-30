@@ -1,11 +1,10 @@
-/** VIXOR — API client wrapper.
+/** API client: access tokens stay in memory and refresh tokens stay HttpOnly. */
 
-Uses fetch with the access token from an in-memory store. Refresh token
-is httpOnly (managed by browser), so refresh is handled via the
-/backend route that forwards the cookie.
- */
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1"
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (process.env.NODE_ENV === "development"
+    ? "http://127.0.0.1:8001/api/v1"
+    : "https://localhost:8000/api/v1")
 
 let accessToken: string | null = null
 
@@ -17,50 +16,96 @@ export function getAccessToken(): string | null {
   return accessToken
 }
 
-async function request<T>(
+function requestUrl(input: RequestInfo | URL): string {
+  const path = input instanceof Request ? input.url : input.toString()
+  if (/^https?:\/\//i.test(path)) return path
+  return `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`
+}
+
+function requestHeaders(init?: RequestInit): Headers {
+  const headers = new Headers(init?.headers)
+  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json")
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`)
+  return headers
+}
+
+export async function apiResponse(
   input: RequestInfo | URL,
   init?: RequestInit
-): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+): Promise<Response> {
+  const url = requestUrl(input)
+  const options: RequestInit = {
+    ...init,
+    headers: requestHeaders(init),
+    credentials: "include",
   }
-  if (init?.headers) {
-    for (const [key, value] of Object.entries(init.headers)) {
-      headers[String(key)] = String(value)
+
+  let response = await fetch(url, options)
+  if (
+    response.status === 401 &&
+    !url.endsWith("/auth/login") &&
+    !url.endsWith("/auth/refresh")
+  ) {
+    const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => null)
+    if (refreshResponse?.ok) {
+      const refreshed = await refreshResponse.json().catch(() => null)
+      if (typeof refreshed?.access_token === "string") {
+        setAccessToken(refreshed.access_token)
+        response = await fetch(url, { ...options, headers: requestHeaders(init) })
+      }
     }
   }
 
-  if (accessToken) {
-    headers["Authorization"] = `Bearer ${accessToken}`
-  }
+  return response
+}
 
-  const response = await fetch(`${API_BASE_URL}${input.toString().replace(API_BASE_URL, "")}`, {
-    ...init,
-    headers,
-  })
-
+async function request<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const response = await apiResponse(input, init)
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
     const error = new Error(body.detail ?? `Request failed: ${response.status}`)
-    ;(error as any).status = response.status
-    ;(error as any).body = body
+    ;(error as Error & { status?: number; body?: unknown }).status = response.status
+    ;(error as Error & { status?: number; body?: unknown }).body = body
     throw error
   }
 
-  if (response.status === 204) {
-    return undefined as unknown as T
-  }
-
+  if (response.status === 204) return undefined as T
   return response.json()
 }
 
 export const api = {
-  get: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: "GET" }),
+  get: <T>(path: string, init?: RequestInit) =>
+    request<T>(path, { ...init, method: "GET" }),
   post: <T>(path: string, body?: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: "POST", body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, {
+      ...init,
+      method: "POST",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
   put: <T>(path: string, body?: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: "PUT", body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, {
+      ...init,
+      method: "PUT",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
   patch: <T>(path: string, body?: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
-  delete: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: "DELETE" }),
+    request<T>(path, {
+      ...init,
+      method: "PATCH",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+  delete: <T>(path: string, init?: RequestInit) =>
+    request<T>(path, { ...init, method: "DELETE" }),
+}
+
+export async function getFirstScanId(): Promise<string | null> {
+  try {
+    const scans = await api.get<Array<{ id: string }>>("/scans")
+    return scans[0]?.id ?? null
+  } catch {
+    return null
+  }
 }

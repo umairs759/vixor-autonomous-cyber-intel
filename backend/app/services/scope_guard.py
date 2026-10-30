@@ -323,16 +323,24 @@ def is_subdomain_of(hostname: str, root_domain: str) -> bool:
 
 
 def resolve_ips(hostname: str) -> list[str]:
-    """Resolve a hostname to its IP addresses via DNS A record lookup.
-
-    Returns a list of IP strings. Empty list if resolution fails.
-    """
-    try:
-        answers = dns.resolver.resolve(hostname, "A")
-        return [str(answer) for answer in answers]
-    except Exception:  # noqa: BLE001 - DNS resolution failures are expected, return empty
+    """Resolve IPv4 and IPv6 addresses, returning an empty list on failure."""
+    resolved: set[str] = set()
+    for record_type in ("A", "AAAA"):
+        try:
+            resolved.update(
+                str(answer) for answer in dns.resolver.resolve(hostname, record_type)
+            )
+        except Exception as exc:  # noqa: BLE001 - DNS failures are expected
+            logger.debug(
+                "dns_record_family_resolution_failed",
+                hostname=hostname,
+                record_type=record_type,
+                error=str(exc),
+            )
+            continue
+    if not resolved:
         logger.warning("dns_resolution_failed", hostname=hostname)
-        return []
+    return sorted(resolved)
 
 
 def is_domain_verified_recently(domain: Domain) -> tuple[bool, str | None]:

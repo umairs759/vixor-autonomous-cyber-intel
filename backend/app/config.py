@@ -6,14 +6,18 @@ value is server-side only.
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=Path(__file__).resolve().parents[1] / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
     )
 
     # Database
@@ -42,7 +46,8 @@ class Settings(BaseSettings):
     )
     # CORS
     CORS_ALLOWED_ORIGINS: str = Field(
-        default="https://localhost:3000", description="Comma-separated allowed origins"
+        default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001",
+        description="Comma-separated allowed origins"
     )
     # Admin seed
     ADMIN_EMAIL: str = Field(
@@ -81,6 +86,17 @@ class Settings(BaseSettings):
         ge=1024,
         description="Max request body size in bytes (default 10 MB)",
     )
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _anchor_sqlite_database(cls, value: str) -> str:
+        url = make_url(value)
+        if url.drivername.startswith("sqlite") and url.database and url.database != ":memory:":
+            database_path = Path(url.database)
+            if not database_path.is_absolute():
+                database_path = (Path(__file__).resolve().parents[1] / database_path).resolve()
+                url = url.set(database=database_path.as_posix())
+        return url.render_as_string(hide_password=False)
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod

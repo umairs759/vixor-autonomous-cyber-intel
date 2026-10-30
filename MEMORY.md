@@ -6,18 +6,18 @@
 - T-003: docker-compose — `docker compose config` validates (exit 0), all healthchecks + resource limits configured, all 4 secret files present with content. `docker compose up --build` blocked by no Docker Hub network.
 - T-004: Alembic setup, base migration, pytest skeleton — migrations apply to SQLite (upgrade head OK)
 - T-005: Next.js 14 App Router skeleton — `npm run build`, tsc, eslint, jest all pass
-- T-006: Auth (argon2, JWT 15m access + refresh) — login returns tokens via curl
+- T-006: Auth (argon2, JWT 15m access + refresh) — access/refresh flow was repaired to use signed rotating refresh tokens and HttpOnly cookies; API integration re-verification is blocked by the local TestClient startup hang.
 - T-009: Rate limiting (Redis) with fail-open when Redis unavailable
-- T-011 to T-014: Database models, migrations, seed script — admin + demo seeded to SQLite
-- T-015: Auth endpoints (login/refresh/logout) — verified via curl
-- T-017: Projects CRUD with ownership checks — verified via curl
+- T-011 to T-014: Database models, migrations, seed script — isolated in-memory SQLite test ran seed twice and verified configured admin password hashing/state, one demo project, two domains, three findings/scores/histories, and one correlation. Demo analyst creation now requires explicit environment credentials. No existing database was modified.
+- T-015: Auth endpoints (login/refresh/logout) — service-level token rotation and revocation tests pass (3/3); HTTP integration verification is blocked by the Windows asyncio socket-pair hang in TestClient.
+- T-017: Project listing previously bypassed authentication and returned all projects. Fixed identity/ownership filtering and restricted writes to analyst/admin; focused API tests added. Runtime pytest verification is blocked because TestClient hangs creating the Windows asyncio socket pair; targeted Ruff checks pass.
 - T-018: Domain registration with random token — verified via curl
 - T-019: Domain verification (DNS TXT + .well-known file) — precise failure reasons via curl
 - ML: build_dataset (weak supervision) + train_models (RandomForest + XGBoost, xgb-v1.0.0 macro F1 0.681) — artifacts in ml/artifacts/
 - Backend workers: celery_app, tasks_scan, tasks_ml, tasks_schedule implemented
 - T-007: RBAC dependency (admin/analyst/viewer) + tests — 19 unit/integration tests added, all passing. Role hierarchy verified: admin > analyst > viewer. 403 for insufficient role, 401 for missing/invalid token.
 - T-008: Audit logging service + middleware + /admin/audit-logs — audit_service.py fixed (event_metadata column mapping), AuditMiddleware added and wired into main.py, /api/v1/users/audit-logs verified (admin only, 403 for non-admin, 401 for no token). 9 tests added, all passing.
-- T-010: Security headers, CORS allowlist, request size limits — SecurityHeadersMiddleware, CORS allowlist, RequestSizeMiddleware (MAX_REQUEST_SIZE_BYTES=10MB) added and verified. 7 tests added, all passing.
+- T-010: Security headers, CORS allowlist, request size limits — SecurityHeadersMiddleware, CORS allowlist updated to accept local variants `http://localhost:3000`, `http://127.0.0.1:3000`, `http://localhost:3001`, `http://127.0.0.1:3001` with `allow_credentials=True`, `allow_methods=["*"]`, `allow_headers=["*"]`. RequestSizeMiddleware (MAX_REQUEST_SIZE_BYTES=10MB) added and verified. 7 tests added, all passing.
 - T-016: Users admin endpoints + tests — 11 integration tests added, all passing. Create/list/update user + audit-logs endpoints verified with RBAC (403/401), validation (409/400/404).
 - T-020: scope_guard service + exhaustive tests — 51 unit tests passing. Hostname validation, IP resolution, private/CDN/metadata blocking, domain verification window all verified. Enforced in tasks_scan.py worker.
 - T-021: Discovery: Subfinder runner — 13 unit tests passing with mocked subprocess (binary not available locally). Hostname validation, shell=False, JSON/plain output parsing, scope filtering verified.

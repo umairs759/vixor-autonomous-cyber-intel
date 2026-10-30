@@ -21,8 +21,10 @@ class TokenResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str = Field(..., description="Opaque refresh token")
+    refresh_token: str | None = Field(default=None, description="Refresh token")
 
 
 class LogoutRequest(BaseModel):
-    refresh_token: str = Field(..., description="Refresh token to revoke")
+    refresh_token: str | None = Field(
+        default=None, description="Refresh token to revoke"
+    )

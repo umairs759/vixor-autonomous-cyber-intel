@@ -5,6 +5,7 @@ GET /scans/{id} - Get scan details (ownership-checked).
 GET /scans/{id}/findings - Get scan findings (ownership-checked).
 """
 
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,9 +13,13 @@ from sqlalchemy.orm import Session
 
 from app.core.rbac import require_role
 from app.deps import get_db, get_db_session
+from app.models.asset import Asset, ScopeStatus
+from app.models.domain import DomainStatus
 from app.models.scan import Scan, ScanStatus
-from app.models.scan_asset import ScanAsset
+from app.schemas.scan import ScanCreateRequest
 from app.services.domain_service import DomainService
+from app.services.scan_admission import ScanConcurrencyLimit, create_queued_scan
+from app.services.scope_guard import is_in_scope
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -29,13 +34,13 @@ def get_domain_service(db: Session = Depends(get_db)) -> DomainService:
     summary="Start a scan (ownership-checked)",
 )
 async def create_scan(
-    domain_id: str,
-    asset_ids: list[str],
+    scan_data: ScanCreateRequest,
+    db: Session = Depends(get_db),
     domain_svc: DomainService = Depends(get_domain_service),
     current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> dict[str, Any]:
     domain = domain_svc.get_domain(
-        domain_id=domain_id,
+        domain_id=scan_data.domain_id,
         user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
@@ -44,27 +49,141 @@ async def create_scan(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Domain not found.",
         )
+    if domain.status != DomainStatus.verified or domain.verified_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Domain ownership must be verified before scanning.",
+        )
 
-    db = get_db_session()
+    requested_ids = set(scan_data.asset_ids)
+    asset_query = db.query(Asset).filter(Asset.domain_id == domain.id)
+    if requested_ids:
+        asset_query = asset_query.filter(Asset.id.in_(requested_ids))
+    else:
+        asset_query = asset_query.filter(Asset.scope_status == ScopeStatus.in_scope)
+    assets = asset_query.all()
+    if requested_ids and len(assets) != len(requested_ids):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="One or more assets do not belong to this domain.",
+        )
+    if not assets:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No in-scope assets are available for this domain.",
+        )
+
+    for asset in assets:
+        if asset.scope_status != ScopeStatus.in_scope:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="An asset is outside the approved scan scope.",
+            )
+        in_scope, reason = is_in_scope(domain, asset.hostname, resolve_dns=True)
+        if not in_scope:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=reason or "Asset is outside the approved scan scope.",
+            )
 
     try:
-        scan = Scan(
+        scan = create_queued_scan(
+            db,
             project_id=domain.project_id,
-            domain_id=domain_id,
+            domain_id=domain.id,
             triggered_by=current_user["user_id"],
-            status=ScanStatus.queued,
+            assets=assets,
         )
-        db.add(scan)
         db.commit()
         db.refresh(scan)
+    except ScanConcurrencyLimit as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-        # Create scan_assets
-        for asset_id in asset_ids:
-            sa = ScanAsset(scan_id=scan.id, asset_id=asset_id, status="pending")
-            db.add(sa)
+    try:
+        from app.workers.tasks_scan import run_scan
+
+        run_scan.delay(
+            str(scan.id), str(domain.id), [str(asset.id) for asset in assets]
+        )
+    except Exception as exc:
+        scan.status = ScanStatus.failed
+        scan.error_summary = "Scan task could not be dispatched."
         db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Scan task queue is unavailable.",
+        ) from exc
 
-        return {"scan_id": scan.id, "status": scan.status.value}
+    return {"scan_id": scan.id, "status": scan.status.value}
+
+
+@router.post("/{scan_id}/cancel", summary="Cancel a queued scan")
+async def cancel_scan(
+    scan_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
+) -> dict[str, Any]:
+    from app.models.project import Project
+
+    scan = (
+        db.query(Scan)
+        .join(Project, Scan.project_id == Project.id)
+        .filter(Scan.id == scan_id)
+        .with_for_update()
+        .first()
+    )
+    if scan is None or (
+        current_user.get("role") != "admin"
+        and scan.project.owner_id != current_user["user_id"]
+    ):
+        raise HTTPException(status_code=404, detail="Scan not found.")
+    if scan.status != ScanStatus.queued:
+        raise HTTPException(status_code=409, detail="Only queued scans can be cancelled.")
+    scan.status = ScanStatus.cancelled
+    scan.finished_at = datetime.now(UTC)
+    scan.error_summary = "Cancelled before execution."
+    db.commit()
+    return {"scan_id": scan.id, "status": scan.status.value}
+
+
+@router.get(
+    "",
+    response_model=list[dict[str, Any]],
+    summary="List scans (ownership-filtered)",
+)
+async def list_scans(
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
+) -> list[dict[str, Any]]:
+    db = get_db_session()
+    try:
+        from app.models.project import Project
+
+        user_id = current_user["user_id"]
+        user_role = current_user.get("role", "viewer")
+
+        if user_role == "admin":
+            scans = db.query(Scan).all()
+        else:
+            scans = (
+                db.query(Scan)
+                .join(Project, Scan.project_id == Project.id)
+                .filter(Project.owner_id == user_id)
+                .all()
+            )
+
+        return [
+            {
+                "id": s.id,
+                "project_id": s.project_id,
+                "domain_id": s.domain_id,
+                "status": s.status.value,
+                "started_at": s.started_at.isoformat() if s.started_at else None,
+                "finished_at": s.finished_at.isoformat() if s.finished_at else None,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+            }
+            for s in scans
+        ]
     finally:
         db.close()
 
@@ -88,16 +207,12 @@ async def get_scan(
             )
 
         # Ownership check
-        domain_svc = DomainService(get_db_session())
-        try:
-            domain = domain_svc.get_domain(
-                domain_id=scan.domain_id,
-                user_id=current_user["user_id"],
-                user_role=current_user.get("role", "viewer"),
-            )
-        finally:
-            # DomainService opened its own session via get_db_session(); close it
-            pass
+        domain_svc = DomainService(db)
+        domain = domain_svc.get_domain(
+            domain_id=scan.domain_id,
+            user_id=current_user["user_id"],
+            user_role=current_user.get("role", "viewer"),
+        )
 
         if not domain:
             raise HTTPException(

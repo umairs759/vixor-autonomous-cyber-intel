@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { isAuthenticated, clearAccessToken } from "@/lib/auth"
 import { useRouter } from "next/navigation"
@@ -18,16 +18,7 @@ export default function AdminUsersPage() {
   const [newPassword, setNewPassword] = useState("")
   const [newRole, setNewRole] = useState("analyst")
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      clearAccessToken()
-      router.push("/login")
-      return
-    }
-    loadUsers()
-  }, [router])
-
-  async function loadUsers() {
+  const loadUsers = useCallback(async () => {
     try {
       const data = await api.get<any[]>("/users")
       setUsers(data)
@@ -41,7 +32,16 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      clearAccessToken()
+      router.push("/login")
+      return
+    }
+    void loadUsers()
+  }, [loadUsers, router])
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault()
@@ -65,20 +65,16 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <nav className="border-b border-border/50 bg-surface sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-mono font-bold text-text tracking-tight">
-            <div className="w-6 h-6 rounded bg-primary text-background flex items-center justify-center text-xs">V</div>
-            VIXOR
-          </div>
-          <Button onClick={() => router.push("/dashboard")}>Dashboard</Button>
-          <Button onClick={() => { clearAccessToken(); router.push("/login") }}>Sign out</Button>
-        </div>
-      </nav>
-
+    <div className="min-h-screen pt-16">
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-40 font-mono font-bold text-text mb-8">Admin - Users</h1>
+
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={createUser} className="card mb-8">
           <div className="grid grid-cols-3 gap-4">

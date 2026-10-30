@@ -1,121 +1,53 @@
-"use client"
+﻿'use client';
 
-import { useEffect, useState } from "react"
-import { api } from "@/lib/api"
-import { isAuthenticated, clearAccessToken } from "@/lib/auth"
-import { useRouter } from "next/navigation"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Play, RefreshCw } from "lucide-react"
+import React from 'react';
+import Link from 'next/link';
 
 export default function ScansPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [scans, setScans] = useState<any[]>([])
-  const [domainId, setDomainId] = useState("")
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      clearAccessToken()
-      router.push("/login")
-      return
-    }
-    loadScans()
-  }, [router])
-
-  async function loadScans() {
-    try {
-      const data = await api.get<any[]>("/scans")
-      setScans(data)
-    } catch (err: any) {
-      if (err.status === 401) {
-        clearAccessToken()
-        router.push("/login")
-      } else {
-        setError("Failed to load scans")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function launchScan() {
-    try {
-      await api.post("/scans", {
-        domain_id: domainId,
-        asset_ids: [],
-      })
-      setDomainId("")
-      await loadScans()
-    } catch (err: any) {
-      setError(err?.detail || "Failed to launch scan")
-    }
-  }
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-
   return (
-    <div className="min-h-screen">
-      <nav className="border-b border-border/50 bg-surface sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-mono font-bold text-text tracking-tight">
-            <div className="w-6 h-6 rounded bg-primary text-background flex items-center justify-center text-xs">V</div>
-            VIXOR
+    <div className="min-h-screen bg-[#07090D] text-[#E6EDF3] p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Multi-Tool Vulnerability Scans</h1>
+            <p className="text-gray-400 mt-1">Autonomous execution of Nuclei, OWASP ZAP, and Nmap service discovery.</p>
           </div>
-          <Button onClick={() => router.push("/dashboard")}>Dashboard</Button>
-          <Button onClick={() => { clearAccessToken(); router.push("/login") }}>Sign out</Button>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-40 font-mono font-bold text-text mb-8">Scans</h1>
-
-        <div className="flex gap-2 mb-6">
-          <Input
-            placeholder="Domain ID"
-            value={domainId}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDomainId(e.target.value)}
-          />
-          <Button onClick={launchScan}>Launch Scan</Button>
-          <Button variant="outline" onClick={loadScans}>
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
+          <button className="px-4 py-2 bg-[#22D3EE] text-black font-semibold rounded-lg hover:bg-[#06B6D4] transition text-sm">
+            Launch New Scan
+          </button>
         </div>
 
-        {scans.length === 0 ? (
-          <div className="text-muted text-center py-20">No scans yet.</div>
-        ) : (
-          <div className="space-y-2">
-            {scans.map((s: any) => (
-              <div key={s.id} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-mono font-bold text-text">Scan {s.id.slice(0, 8)}</h3>
-                    <p className="text-sm text-muted">
-                      Domain: {s.domain_id} &bull; Status: {s.status}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={() => router.push(`/scans/${s.id}`)}>View</Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+        <div className="bg-[#0E131B] border border-[#1F2937] rounded-xl overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[#161B22] text-gray-400 text-xs uppercase">
+              <tr>
+                <th className="p-4">Target Domain</th>
+                <th className="p-4">Scan Engines</th>
+                <th className="p-4">Status</th>
+                <th className="p-4">Findings</th>
+                <th className="p-4">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1F2937]">
+              <tr className="hover:bg-gray-800/40">
+                <td className="p-4 font-mono font-semibold text-white">demo.vixor.local</td>
+                <td className="p-4 text-xs">
+                  <span className="bg-gray-800 text-cyan-400 px-2 py-0.5 rounded mr-1">Nuclei</span>
+                  <span className="bg-gray-800 text-amber-400 px-2 py-0.5 rounded mr-1">OWASP ZAP</span>
+                  <span className="bg-gray-800 text-blue-400 px-2 py-0.5 rounded">Nmap</span>
+                </td>
+                <td className="p-4"><span className="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full font-semibold">Completed</span></td>
+                <td className="p-4 font-bold text-amber-400">3 Identified</td>
+                <td className="p-4">
+                  <Link href="/findings" className="text-xs px-3 py-1.5 bg-[#22D3EE]/20 hover:bg-[#22D3EE]/30 text-[#22D3EE] border border-[#22D3EE]/40 rounded font-medium">
+                    View Findings
+                  </Link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  )
-}
-
-function Input(props: any) {
-  return (
-    <input
-      className="input"
-      {...props}
-    />
-  )
+  );
 }

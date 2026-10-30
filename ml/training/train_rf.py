@@ -4,7 +4,7 @@ from __future__ import annotations
 
 try:
     from .train_models import train_and_evaluate
-except Exception:  # pragma: no cover - script execution fallback
+except ImportError:  # pragma: no cover - script execution fallback
     from train_models import train_and_evaluate  # type: ignore[import-not-found]
 
 
@@ -15,4 +15,3 @@ def train_random_forest() -> dict:
 
 if __name__ == "__main__":
     train_random_forest()
-PY

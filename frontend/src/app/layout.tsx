@@ -1,13 +1,9 @@
 import type { Metadata } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
+import { TopNav } from "@/components/TopNav"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  weight: ["400", "700"],
-})
+// Render TopNav on all routes except /login
+const showTopNav = !["/login"].includes(typeof window !== "undefined" ? window.location.pathname : "")
 
 export const metadata: Metadata = {
   title: "VIXOR — Vulnerability Intelligence Platform",
@@ -20,8 +16,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+    <html lang="en" className="bg-[#07090D] text-[#E6EDF3] min-h-screen antialiased">
+      <body className={`bg-[#07090D] text-[#E6EDF3] min-h-screen antialiased`}>
+        {showTopNav && <TopNav />}
         {children}
       </body>
     </html>

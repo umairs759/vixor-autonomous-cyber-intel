@@ -1,37 +1,40 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { isAuthenticated, clearAccessToken } from "@/lib/auth"
 import { useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
 
 export default function DomainsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [domains, setDomains] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState("")
   const [newDomain, setNewDomain] = useState("")
   const [method, setMethod] = useState("dns_txt")
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      clearAccessToken()
-      router.push("/login")
-      return
-    }
-    loadDomains()
-  }, [router])
-
-  async function loadDomains() {
+  const loadDomains = useCallback(async () => {
     try {
-      // Get all domains - in a real app this would be filtered by project
-      const data = await api.get<any[]>("/domains")
-      setDomains(data)
+      setError(null)
+      const projectList = await api.get<any[]>("/projects")
+      setProjects(projectList)
+      if (projectList.length === 0) {
+        setSelectedProjectId("")
+        setDomains([])
+        return
+      }
+
+      const activeProject = projectList.find((project) => project.id === selectedProjectId) ?? projectList[0]
+      setSelectedProjectId(activeProject.id)
+      const projectDomains = await Promise.all(
+        projectList.map((project) => api.get<any[]>(`/projects/${project.id}/domains`))
+      )
+      setDomains(projectDomains.flat())
     } catch (err: any) {
       if (err.status === 401) {
         clearAccessToken()
@@ -42,30 +45,43 @@ export default function DomainsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router, selectedProjectId])
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      clearAccessToken()
+      router.push("/login")
+      return
+    }
+    void loadDomains()
+  }, [loadDomains, router])
 
   async function registerDomain(e: React.FormEvent) {
     e.preventDefault()
+    if (!selectedProjectId) {
+      setError("Create or select a project before registering a domain.")
+      return
+    }
     try {
-      await api.post("/projects/0/domains", {
+      await api.post(`/projects/${selectedProjectId}/domains`, {
         root_domain: newDomain,
         verification_method: method,
       })
       setNewDomain("")
       await loadDomains()
     } catch (err: any) {
-      setError(err?.detail || "Failed to register domain")
+      setError(err?.message || "Failed to register domain")
     }
   }
 
   async function verifyDomain(domain: any) {
     try {
-      await api.post(`/domains/${domain.id}/verify`, {
+      await api.post(`/projects/domains/${domain.id}/verify`, {
         verification_method: domain.verification_method,
       })
       await loadDomains()
     } catch (err: any) {
-      setError(err?.detail || "Verification failed")
+      setError(err?.message || "Verification failed")
     }
   }
 
@@ -89,8 +105,27 @@ export default function DomainsPage() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-40 font-mono font-bold text-text mb-8">Domains</h1>
 
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={registerDomain} className="card mb-8">
           <div className="flex gap-2">
+            <select
+              aria-label="Project"
+              value={selectedProjectId}
+              onChange={(event) => setSelectedProjectId(event.target.value)}
+              className="input"
+              required
+            >
+              <option value="" disabled>Select a project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
             <Input
               placeholder="example.com"
               value={newDomain}

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from xml.sax.saxutils import escape
 
 from reportlab.graphics.charts.barcharts import VerticalBarChart  # type: ignore[import-untyped]
 from reportlab.graphics.shapes import Drawing  # type: ignore[import-untyped]
@@ -24,6 +25,7 @@ from reportlab.platypus import (  # type: ignore[import-untyped]
 )
 
 from app.core.logging import get_logger
+from app.models.correlation import Correlation
 from app.models.finding import Finding
 from app.models.finding_score import FindingScore
 from app.models.report import Report
@@ -40,10 +42,22 @@ class ReportService:
     def __init__(self, db_session: Any) -> None:
         self.db = db_session
 
-    def generate_report(self, scan_id: str, output_path: str | None = None) -> Report:
-        return self.generate(scan_id, output_path=output_path)
+    def generate_report(
+        self,
+        scan_id: str,
+        output_path: str | None = None,
+        generated_by: str | None = None,
+    ) -> Report:
+        return self.generate(
+            scan_id, output_path=output_path, generated_by=generated_by
+        )
 
-    def generate(self, scan_id: str, output_path: str | None = None) -> Report:
+    def generate(
+        self,
+        scan_id: str,
+        output_path: str | None = None,
+        generated_by: str | None = None,
+    ) -> Report:
         scan = self.db.query(Scan).filter(Scan.id == scan_id).first()
         if not scan:
             raise ValueError("scan not found")
@@ -70,17 +84,25 @@ class ReportService:
         styles = getSampleStyleSheet()
         story: list[Any] = []
 
-        story.append(Paragraph(f"VIXOR Scan Report - {scan_id}", styles["Title"]))
+        story.append(Paragraph(f"VIXOR Scan Report - {escape(scan_id)}", styles["Title"]))
         story.append(Spacer(1, 0.2 * inch))
-        story.append(Paragraph(f"Project: {scan.project_id}", styles["Normal"]))
-        story.append(Paragraph(f"Domain: {scan.domain_id}", styles["Normal"]))
-        story.append(Paragraph(f"Status: {scan.status}", styles["Normal"]))
+        story.append(Paragraph(f"Project: {escape(str(scan.project_id))}", styles["Normal"]))
+        story.append(Paragraph(f"Domain: {escape(str(scan.domain_id))}", styles["Normal"]))
+        story.append(Paragraph(f"Status: {escape(scan.status.value)}", styles["Normal"]))
         story.append(Spacer(1, 0.2 * inch))
 
         # Executive summary
         story.append(Paragraph("Executive Summary", styles["Heading2"]))
         total = len(findings)
         story.append(Paragraph(f"Total findings: {total}", styles["Normal"]))
+        risk_values = [scores[f.id].risk_score for f in findings if f.id in scores]
+        if risk_values:
+            story.append(
+                Paragraph(
+                    f"Highest ML risk score: {max(risk_values):.1f}/100",
+                    styles["Normal"],
+                )
+            )
         for sev, count in severity_counts.items():
             story.append(Paragraph(f"{sev.title()}: {count}", styles["Normal"]))
         story.append(Spacer(1, 0.2 * inch))
@@ -107,7 +129,7 @@ class ReportService:
             risk = f"{fs.risk_score:.1f}" if fs else "N/A"
             table_data.append(
                 [
-                    (f.title or "")[:60],
+                    escape((f.title or "")[:60]),
                     (f.severity_raw or "").title(),
                     risk,
                     f.source_tool or "",
@@ -129,6 +151,64 @@ class ReportService:
             story.append(Paragraph("No findings.", styles["Normal"]))
         story.append(Spacer(1, 0.2 * inch))
 
+        story.append(Paragraph("Risk Assessments and Explanations", styles["Heading2"]))
+        for finding in findings:
+            score = scores.get(finding.id)
+            if not score:
+                continue
+            story.append(
+                Paragraph(
+                    f"{escape(finding.title)} — ML score {score.risk_score:.1f}/100 "
+                    f"({escape(score.risk_class.value)})",
+                    styles["Heading3"],
+                )
+            )
+            story.append(
+                Paragraph(
+                    escape(score.narrative or "No risk narrative available."),
+                    styles["Normal"],
+                )
+            )
+            contributions = sorted(
+                (score.shap_values or {}).items(),
+                key=lambda item: abs(float(item[1])),
+                reverse=True,
+            )[:5]
+            if contributions:
+                text = "; ".join(
+                    f"{escape(str(name))}: {float(value):+.3f}"
+                    for name, value in contributions
+                )
+                story.append(
+                    Paragraph(f"Top SHAP contributions: {text}", styles["Normal"])
+                )
+            story.append(Spacer(1, 0.08 * inch))
+
+        story.append(Paragraph("Correlation Analysis", styles["Heading2"]))
+        correlations = (
+            self.db.query(Correlation)
+            .filter(Correlation.scan_id == scan_id)
+            .order_by(Correlation.combined_score.desc())
+            .all()
+        )
+        if correlations:
+            for correlation in correlations:
+                story.append(
+                    Paragraph(
+                        f"{escape(correlation.title)} — combined risk "
+                        f"{(correlation.combined_score or 0):.1f}/100",
+                        styles["Heading3"],
+                    )
+                )
+                story.append(
+                    Paragraph(escape(correlation.narrative), styles["Normal"])
+                )
+        else:
+            story.append(
+                Paragraph("No correlated findings for this scan.", styles["Normal"])
+            )
+        story.append(Spacer(1, 0.2 * inch))
+
         # Remediation
         story.append(Paragraph("Remediation", styles["Heading2"]))
         seen_remediation: set[str] = set()
@@ -136,7 +216,7 @@ class ReportService:
             rem = (f.remediation or "").strip()
             if rem and rem not in seen_remediation:
                 seen_remediation.add(rem)
-                story.append(Paragraph(f"- {rem}", styles["Normal"]))
+                story.append(Paragraph(f"- {escape(rem)}", styles["Normal"]))
         if not seen_remediation:
             story.append(Paragraph("No remediation guidance.", styles["Normal"]))
         story.append(Spacer(1, 0.2 * inch))
@@ -154,7 +234,10 @@ class ReportService:
             if history_rows:
                 for h in history_rows[:50]:
                     story.append(
-                        Paragraph(f"{h.fingerprint[:12]}...: {h.status.value}", styles["Normal"])
+                        Paragraph(
+                            f"{escape(h.fingerprint[:12])}...: {escape(h.status.value)}",
+                            styles["Normal"],
+                        )
                     )
             else:
                 story.append(Paragraph("No regression history for this scan.", styles["Normal"]))
@@ -163,10 +246,20 @@ class ReportService:
 
         doc.build(story)
 
+        with open(output_path, "rb") as generated_pdf:
+            if generated_pdf.read(5) != b"%PDF-" or os.path.getsize(output_path) == 0:
+                raise RuntimeError("Report generator did not produce a valid PDF")
+
+        report_owner = generated_by or scan.triggered_by
+        if not report_owner:
+            raise ValueError("report creator is required")
         report = Report(
             scan_id=scan_id,
-            generated_by=scan.triggered_by,
+            generated_by=report_owner,
             file_path=output_path,
+            title=f"VIXOR Scan Report — {scan_id}",
+            status="completed",
+            format="PDF",
         )
         self.db.add(report)
         self.db.commit()
@@ -174,11 +267,25 @@ class ReportService:
         logger.info("report generated", scan_id=scan_id, path=output_path)
         return report
 
-    def generate_pdf(self, scan_id: str, output_path: str | None = None) -> str:
-        report = self.generate(scan_id, output_path=output_path)
+    def generate_pdf(
+        self,
+        scan_id: str,
+        output_path: str | None = None,
+        generated_by: str | None = None,
+    ) -> str:
+        report = self.generate(
+            scan_id, output_path=output_path, generated_by=generated_by
+        )
         return report.file_path
 
 
-def generate_report_pdf(db_session: Any, scan_id: str, output_path: str | None = None) -> str:
+def generate_report_pdf(
+    db_session: Any,
+    scan_id: str,
+    output_path: str | None = None,
+    generated_by: str | None = None,
+) -> str:
     service = ReportService(db_session)
-    return service.generate_pdf(scan_id, output_path=output_path)
+    return service.generate_pdf(
+        scan_id, output_path=output_path, generated_by=generated_by
+    )

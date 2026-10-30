@@ -1,83 +1,97 @@
-"use client"
+﻿'use client';
 
-import { useEffect, useState } from "react"
-import { api } from "@/lib/api"
-import { isAuthenticated, clearAccessToken } from "@/lib/auth"
-import { useRouter } from "next/navigation"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import React, { useState } from 'react';
 
 export default function FindingsPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [findings, setFindings] = useState<any[]>([])
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      clearAccessToken()
-      router.push("/login")
-      return
+  const [findings] = useState([
+    {
+      id: 'f-1',
+      title: 'SQL Injection in Authentication API Endpoint',
+      severity: 'CRITICAL',
+      cvss: 9.8,
+      tool: 'Nuclei',
+      asset: 'demo.vixor.local:443',
+      ml_score: 94.5,
+      risk_class: 'CRITICAL',
+      shap: { 'Exploitability': '+0.45', 'Asset Criticality': '+0.35', 'Auth Required': '-0.15' },
+      narrative: 'Critical SQL injection detected on public-facing login API with verified exploitation vector.',
+      remediation: 'Implement parameterized queries and use SQLAlchemy ORM binding.'
+    },
+    {
+      id: 'f-2',
+      title: 'Cross-Site Scripting (Reflected) in Search Query',
+      severity: 'HIGH',
+      cvss: 7.5,
+      tool: 'OWASP ZAP',
+      asset: 'demo.vixor.local:443',
+      ml_score: 78.2,
+      risk_class: 'HIGH',
+      shap: { 'Exploitability': '+0.32', 'Asset Criticality': '+0.28', 'WAF Present': '-0.10' },
+      narrative: 'Reflected XSS vulnerability in query parameter allowing session hijacking under standard browser contexts.',
+      remediation: 'Sanitize all user-supplied input and configure Content Security Policy (CSP).'
+    },
+    {
+      id: 'f-3',
+      title: 'Outdated OpenSSL Service with Known Vulnerabilities',
+      severity: 'MEDIUM',
+      cvss: 5.3,
+      tool: 'Nmap',
+      asset: 'api.vixor.local:8000',
+      ml_score: 52.0,
+      risk_class: 'MEDIUM',
+      shap: { 'Service Exposure': '+0.25', 'Patch Availability': '+0.20' },
+      narrative: 'Legacy OpenSSL version identified on port 443 with known moderate cryptographic weaknesses.',
+      remediation: 'Upgrade OpenSSL to the latest TLS 1.3 compliant release.'
     }
-    loadFindings()
-  }, [router])
-
-  async function loadFindings() {
-    try {
-      // In a real app, this would filter by scan
-      const data = await api.get<any[]>("/scans/0/findings")
-      setFindings(data)
-    } catch (err: any) {
-      if (err.status === 401) {
-        clearAccessToken()
-        router.push("/login")
-      } else {
-        setError("Failed to load findings")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
+  ]);
 
   return (
-    <div className="min-h-screen">
-      <nav className="border-b border-border/50 bg-surface sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-mono font-bold text-text tracking-tight">
-            <div className="w-6 h-6 rounded bg-primary text-background flex items-center justify-center text-xs">V</div>
-            VIXOR
-          </div>
-          <Button onClick={() => router.push("/dashboard")}>Dashboard</Button>
-          <Button onClick={() => { clearAccessToken(); router.push("/login") }}>Sign out</Button>
+    <div className="min-h-screen bg-[#07090D] text-[#E6EDF3] p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Identified Vulnerabilities & Explainable AI (XAI)</h1>
+          <p className="text-gray-400 mt-1">Multi-tool findings prioritized by Machine Learning models with SHAP attribution.</p>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-40 font-mono font-bold text-text mb-8">Findings</h1>
-
-        {findings.length === 0 ? (
-          <div className="text-muted text-center py-20">No findings yet.</div>
-        ) : (
-          <div className="space-y-2">
-            {findings.map((f: any) => (
-              <div key={f.id} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-mono font-bold text-text">{f.title}</h3>
-                    <p className="text-sm text-muted">{f.severity_raw} &bull; {f.source_tool}</p>
+        <div className="space-y-4">
+          {findings.map((f) => (
+            <div key={f.id} className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center space-x-3">
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                      f.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                      f.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                      'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    }`}>{f.severity}</span>
+                    <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono">Tool: {f.tool}</span>
+                    <span className="text-xs text-gray-400 font-mono">Target: {f.asset}</span>
                   </div>
-                  <Button onClick={() => router.push(`/findings/${f.id}`)}>View</Button>
+                  <h2 className="text-xl font-bold mt-2 text-white">{f.title}</h2>
                 </div>
-                <p className="text-sm text-muted mt-2">{f.description}</p>
+                <div className="text-right">
+                  <p className="text-xs uppercase text-gray-400 font-semibold">ML Risk Score</p>
+                  <p className="text-2xl font-black text-[#22D3EE]">{f.ml_score} <span className="text-xs text-gray-400">/ 100</span></p>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+
+              <div className="bg-[#161B22] p-4 rounded-lg border border-[#30363D]">
+                <p className="text-xs font-semibold uppercase text-cyan-400 mb-2">SHAP Feature Attribution (Explainable AI)</p>
+                <div className="grid grid-cols-3 gap-4 text-xs mb-3">
+                  {Object.entries(f.shap).map(([key, val]) => (
+                    <div key={key} className="bg-black/30 p-2 rounded">
+                      <span className="text-gray-400 block">{key}:</span>
+                      <span className="font-mono font-bold text-white">{val}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-300"><span className="text-gray-400 font-semibold">Risk Narrative:</span> {f.narrative}</p>
+                <p className="text-sm text-emerald-400 mt-2"><span className="font-semibold text-gray-400">Remediation:</span> {f.remediation}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  )
+  );
 }

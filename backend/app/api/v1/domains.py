@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.core.rbac import require_role
 from app.deps import get_db
+from app.models.domain import Domain
 from app.redis import get_redis
 from app.schemas.domain import (
     DomainResponse,
@@ -51,7 +52,7 @@ async def register_domain(
     domain_data: RegisterDomainRequest,
     domain_svc: DomainService = Depends(get_domain_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> DomainResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -69,6 +70,18 @@ async def register_domain(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found.",
+        )
+
+    normalized_domain = domain_data.root_domain.strip().lower()
+    existing = (
+        domain_svc.db.query(Domain)
+        .filter_by(project_id=project_id, root_domain=normalized_domain)
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This domain is already registered to the project.",
         )
 
     domain = domain_svc.register_domain(
@@ -107,12 +120,15 @@ async def list_domains(
         user_id=current_user["user_id"],
         user_role=current_user.get("role", "viewer"),
     )
+    can_view_token = current_user.get("role") in {"analyst", "admin"}
     return [
         DomainResponse(
             id=d.id,
             project_id=d.project_id,
             root_domain=d.root_domain,
-            verification_token=d.verification_token,
+            verification_token=d.verification_token
+            if can_view_token and d.status.value == "unverified"
+            else None,
             verification_method=d.verification_method.value,
             status=d.status.value,
             verified_at=d.verified_at,
@@ -134,7 +150,7 @@ async def verify_domain(
     verify_data: VerifyDomainRequest,
     domain_svc: DomainService = Depends(get_domain_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> DomainResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -160,6 +176,11 @@ async def verify_domain(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification method. Use 'dns_txt' or 'file'.",
         )
+    if verify_data.verification_method != domain.verification_method.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification method does not match the registered domain.",
+        )
 
     # Perform actual verification (DNS TXT or .well-known file)
     success, reason = await perform_verification(
@@ -183,7 +204,7 @@ async def verify_domain(
         id=domain.id,
         project_id=domain.project_id,
         root_domain=domain.root_domain,
-        verification_token=domain.verification_token,
+        verification_token=None,
         verification_method=domain.verification_method.value,
         status=domain.status.value,
         verified_at=domain.verified_at,
@@ -216,7 +237,10 @@ async def get_domain(
         id=domain.id,
         project_id=domain.project_id,
         root_domain=domain.root_domain,
-        verification_token=domain.verification_token,
+        verification_token=domain.verification_token
+        if current_user.get("role") in {"analyst", "admin"}
+        and domain.status.value == "unverified"
+        else None,
         verification_method=domain.verification_method.value,
         status=domain.status.value,
         verified_at=domain.verified_at,

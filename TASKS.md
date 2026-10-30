@@ -8,7 +8,7 @@
 [x] T-005 Next.js 14 App Router skeleton with TypeScript, Tailwind, design tokens from DESIGN.md
 
 ## Security Foundation
-[x] T-006 Password hashing (argon2), JWT access (15m) + refresh (httpOnly, Secure, SameSite=Strict cookie, rotation)
+[ ] T-006 Password hashing (argon2), JWT access (15m) + refresh (httpOnly, Secure, SameSite=Strict cookie, rotation) — refresh flow corrected; end-to-end API verification pending.
 [x] T-007 RBAC dependency (admin/analyst/viewer) + tests
 [x] T-008 Audit logging service + middleware + /admin/audit-logs
 [x] T-009 Rate limiting (Redis) on auth and scan endpoints; account lockout
@@ -21,9 +21,9 @@
 [x] T-014 Seed script: admin user from env, demo project with fixture data (dev only)
 
 ## Core Features
-[x] T-015 Auth endpoints + tests
+[ ] T-015 Auth endpoints + tests — signed refresh rotation and HttpOnly cookies implemented; endpoint verification pending.
 [x] T-016 Users admin endpoints + tests
-[x] T-017 Projects CRUD with ownership checks
+[ ] T-017 Projects CRUD with ownership checks — API authentication/ownership regression tests added; runtime verification blocked by Windows asyncio socket-pair hang in TestClient.
 [x] T-018 Domain registration + token generation
 [x] T-019 Domain verification (DNS TXT + file) + periodic re-verification task
 [x] T-020 scope_guard service (suffix, IP resolution, CDN/shared-host blocklist, private range block) + exhaustive tests
@@ -35,7 +35,7 @@
 [x] T-026 Nmap runner (safe flags, XML parsing) + normalizer
 [x] T-027 ZAP runner (non-destructive policy, API client) + normalizer
 [x] T-028 Nuclei runner (excluded tags, JSONL parsing) + normalizer
-[x] T-029 Scan orchestrator: Celery chain, timeouts, retries, partial-failure handling, per-project concurrency
+[ ] T-029 Scan orchestrator: Celery chain, timeouts, retries, partial-failure handling, per-project concurrency ? per-project concurrency cap still needs enforcement and verification.
 [x] T-030 Finding dedupe by fingerprint
 [x] T-031 Redis pub/sub progress + WebSocket endpoint (auth required)
 [x] T-032 ML data: fetch NVD, EPSS, CISA KEV; build_dataset with documented labeling strategy
@@ -47,10 +47,10 @@
 [x] T-038 Correlation engine (rule-based grouping + combined score + narrative) + tests
 [x] T-039 Dashboard summary and trend endpoints
 [x] T-040 PDF report service (exec summary, charts, findings, remediation, regression)
-[x] T-041 Scan scheduling with Celery Beat (re-verify ownership before each run)
+[ ] T-041 Scan scheduling with Celery Beat ? cron validation and due-time dispatch implemented; full broker/worker integration remains unverified.
 
 ## UI
-[x] T-042 Login page, auth context, middleware route protection
+[ ] T-042 Login page, auth context, middleware route protection — middleware moved to Next 14 registered path and JWT signature validation added; fresh build blocked by EPERM creating generated output directories under the managed filesystem ACL.
 [x] T-043 App shell: sidebar/bottom tabs, role-aware navigation
 [x] T-044 Projects and domains pages with verification wizard
 [x] T-045 Assets inventory page
@@ -58,12 +58,12 @@
 [x] T-047 Findings list and detail (risk gauge, SHAP chart, narrative, remediation)
 [x] T-048 Correlations and regression views
 [x] T-049 Dashboard (stats, severity distribution, trends) + executive summary view
-[x] T-050 Reports page + download
+[ ] T-050 Reports page + download ? UI and PDF ownership/file checks implemented; report service and browser download need end-to-end verification.
 [x] T-051 Admin: users and audit log pages
 
 ## Testing
 [x] T-052 Unit tests: scope_guard, regression, correlation, feature extraction
 [x] T-053 Integration tests: auth, RBAC, IDOR, scan flow with mocked scanners
-[x] T-054 E2E tests (Playwright): login, verify domain, run mocked scan, view findings, download report
-[x] T-055 Load/limit tests: concurrency and timeout behavior (LI-4)
-[x] T-056 Final security checklist verification and completion report
+[ ] T-054 E2E tests (Playwright): login, verify domain, run mocked scan, view findings, download report ? not re-run in this environment.
+[ ] T-055 Load/limit tests: concurrency and timeout behavior (LI-4) ? concurrency cap remains incomplete.
+[ ] T-056 Final security checklist verification and completion report ? final review records remaining blocked items.

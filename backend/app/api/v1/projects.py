@@ -47,7 +47,7 @@ async def create_project(
     project_data: CreateProjectRequest,
     project_svc: ProjectService = Depends(get_project_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> ProjectResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -75,8 +75,12 @@ async def create_project(
 )
 async def list_projects(
     project_svc: ProjectService = Depends(get_project_service),
+    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> list[ProjectResponse]:
-    projects = project_svc.list_projects(user_id="", user_role="admin")
+    projects = project_svc.list_projects(
+        user_id=str(current_user["user_id"]),
+        user_role=current_user.get("role", "viewer"),
+    )
     return [
         ProjectResponse(
             id=p.id,
@@ -97,7 +101,7 @@ async def list_projects(
 async def get_project(
     project_id: str,
     project_svc: ProjectService = Depends(get_project_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> ProjectResponse:
     project = project_svc.get_project(
         project_id=project_id,
@@ -129,7 +133,7 @@ async def update_project(
     project_data: UpdateProjectRequest,
     project_svc: ProjectService = Depends(get_project_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> ProjectResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -167,7 +171,7 @@ async def delete_project(
     project_id: str,
     project_svc: ProjectService = Depends(get_project_service),
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
+    current_user: dict[str, Any] = Depends(require_role("analyst")),
 ) -> None:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")

@@ -193,6 +193,9 @@ services:
         condition: service_healthy
     environment:
       - NEXT_PUBLIC_API_BASE_URL=https://localhost:8000/api/v1
+      - JWT_SECRET_KEY_FILE=/run/secrets/jwt_secret_key
+    secrets:
+      - jwt_secret_key
     deploy:
       resources:
         limits:

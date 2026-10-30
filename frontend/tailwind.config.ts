@@ -29,8 +29,8 @@ const config: Config = {
         info: "#94A3B8",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
-        mono: ["var(--font-jetbrains-mono)", "monospace"],
+        sans: ["Arial", "Helvetica", "sans-serif"],
+        mono: ["Consolas", "Monaco", "monospace"],
       },
       fontSize: {
         "12": ["0.75rem", { lineHeight: "1rem" }],

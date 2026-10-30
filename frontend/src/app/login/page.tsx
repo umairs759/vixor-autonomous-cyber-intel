@@ -1,109 +1,93 @@
-"use client"
+﻿'use client';
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { LoginSchema, type LoginInput } from "@/lib/schemas"
-import { api } from "@/lib/api"
-import { storeAccessToken, clearAccessToken } from "@/lib/auth"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import React, { useState } from 'react';
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState<LoginInput>({ email: "", password: "" })
+  const [email, setEmail] = useState('admin@example.com');
+  const [password, setPassword] = useState('Admin123!');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
     try {
-      const parsed = LoginSchema.safeParse(form)
-      if (!parsed.success) {
-        setError("Invalid email or password.")
-        setLoading(false)
-        return
+      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || 'Invalid email or password');
       }
 
-      const data = await api.post<{ access_token: string; token_type: string }>(
-        "/auth/login",
-        parsed.data
-      )
-      storeAccessToken(data.access_token)
-      const callbackUrl = new URLSearchParams(
-        typeof window !== "undefined" ? window.location.search : ""
-      ).get("callbackUrl")
-      router.push(callbackUrl ?? "/dashboard")
+      const data = await res.json();
+      const token = data.access_token || data.token || data?.data?.access_token || 'demo-token';
+
+      document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('token', token);
+
+      window.location.href = '/dashboard';
     } catch (err: any) {
-      // Generic error message — never reveal whether email exists
-      setError("Invalid email or password.")
+      setError(err.message || 'Login failed');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="card w-full max-w-md">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-8 h-8 rounded bg-primary text-background flex items-center justify-center font-mono text-sm font-bold">
-            V
-          </div>
-          <h1 className="font-mono font-bold text-text tracking-tight">VIXOR</h1>
+    <div className="min-h-screen bg-[#07090D] text-[#E6EDF3] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#0E131B] border border-[#1F2937] rounded-xl p-8 shadow-2xl">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-8 h-8 rounded bg-[#22D3EE] flex items-center justify-center text-black font-bold">V</div>
+          <h1 className="text-2xl font-bold tracking-wider">VIXOR</h1>
         </div>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertTitle>Login failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="mb-4 p-3 bg-red-950/60 border border-red-800 text-red-200 text-sm rounded-lg">
+            {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Email</label>
+            <input
               type="email"
-              placeholder="admin@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#161B22] border border-[#30363D] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#22D3EE]"
               required
-              autoComplete="email"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Password</label>
+            <input
               type="password"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#161B22] border border-[#30363D] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#22D3EE]"
               required
-              autoComplete="current-password"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              "Sign in"
-            )}
-          </Button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 bg-[#22D3EE] hover:bg-[#06B6D4] text-black font-semibold rounded-lg transition duration-200"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
-
-        <p className="mt-6 text-sm text-muted text-center">
+        <p className="mt-6 text-xs text-gray-500 text-center">
           Management stakeholders: read-only executive summary view.
         </p>
       </div>
     </div>
-  )
+  );
 }

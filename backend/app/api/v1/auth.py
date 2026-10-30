@@ -9,11 +9,11 @@ Per-IP rate limiting enforced on login.
 from typing import Any
 
 import redis
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.core.rate_limit import RateLimiter
-from app.core.rbac import require_role
 from app.deps import get_db
 from app.redis import get_redis
 from app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, TokenResponse
@@ -38,6 +38,30 @@ LOGIN_RATE_LIMIT = 5
 LOGIN_RATE_WINDOW = 60  # seconds
 
 
+def _set_auth_cookies(
+    response: Response, access_token: str, refresh_token: str
+) -> None:
+    settings = get_settings()
+    response.set_cookie(
+        "access_token",
+        access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+        secure=settings.COOKIE_SECURE,
+        httponly=True,
+        samesite="lax",
+    )
+    response.set_cookie(
+        "refresh_token",
+        refresh_token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/api/v1/auth",
+        secure=settings.COOKIE_SECURE,
+        httponly=True,
+        samesite="strict",
+    )
+
+
 @router.post(
     "/login",
     response_model=TokenResponse,
@@ -46,6 +70,7 @@ LOGIN_RATE_WINDOW = 60  # seconds
 )
 async def login(
     request: Request,
+    response: Response,
     login_data: LoginRequest,
     auth: AuthService = Depends(get_auth_service),
     rate_limiter: RateLimiter = Depends(get_rate_limiter),
@@ -88,12 +113,13 @@ async def login(
         )
 
     access_token, refresh_token = auth.create_tokens(user)
+    _set_auth_cookies(response, access_token, refresh_token)
 
     return TokenResponse(
         access_token=access_token,
-        refresh_token=refresh_token,
+        refresh_token=None,
         token_type="bearer",
-        expires_in=60 * 15,  # 15 minutes
+        expires_in=get_settings().ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
 
@@ -105,28 +131,45 @@ async def login(
 )
 async def refresh(
     request: Request,
-    refresh_data: RefreshRequest,
+    response: Response,
+    refresh_data: RefreshRequest | None = None,
     auth: AuthService = Depends(get_auth_service),
 ) -> TokenResponse:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
-    new_access_token, new_refresh_token, error = auth.refresh_access_token(
-        refresh_token=refresh_data.refresh_token,
-        ip=client_ip,
-        user_agent=user_agent,
-    )
-    if error or new_access_token is None or new_refresh_token is None:
+    refresh_token = (
+        refresh_data.refresh_token if refresh_data else None
+    ) or request.cookies.get("refresh_token")
+    if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token.",
         )
 
+    try:
+        new_access_token, new_refresh_token, error = auth.refresh_access_token(
+            refresh_token=refresh_token,
+            ip=client_ip,
+            user_agent=user_agent,
+        )
+    except redis.exceptions.RedisError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Token service is temporarily unavailable.",
+        ) from exc
+    if error or new_access_token is None or new_refresh_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token.",
+        )
+    _set_auth_cookies(response, new_access_token, new_refresh_token)
+
     return TokenResponse(
         access_token=new_access_token,
-        refresh_token=new_refresh_token,
+        refresh_token=None,
         token_type="bearer",
-        expires_in=60 * 15,
+        expires_in=get_settings().ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
 
@@ -137,17 +180,34 @@ async def refresh(
 )
 async def logout(
     request: Request,
-    logout_data: LogoutRequest,
+    response: Response,
+    logout_data: LogoutRequest | None = None,
     auth: AuthService = Depends(get_auth_service),
-    current_user: dict[str, Any] = Depends(require_role("viewer")),
 ) -> None:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
     auth.logout(
-        user_id=current_user["user_id"],
+        user_id=None,
+        refresh_token=(logout_data.refresh_token if logout_data else None)
+        or request.cookies.get("refresh_token"),
         ip=client_ip,
         user_agent=user_agent,
+    )
+    settings = get_settings()
+    response.delete_cookie(
+        "access_token",
+        path="/",
+        secure=settings.COOKIE_SECURE,
+        httponly=True,
+        samesite="lax",
+    )
+    response.delete_cookie(
+        "refresh_token",
+        path="/api/v1/auth",
+        secure=settings.COOKIE_SECURE,
+        httponly=True,
+        samesite="strict",
     )
 
 

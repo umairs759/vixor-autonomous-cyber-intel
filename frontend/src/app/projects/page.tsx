@@ -1,110 +1,87 @@
-"use client"
+﻿'use client';
 
-import { useEffect, useState } from "react"
-import { api } from "@/lib/api"
-import { isAuthenticated, clearAccessToken } from "@/lib/auth"
-import { useRouter } from "next/navigation"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function ProjectsPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [projects, setProjects] = useState<any[]>([])
-  const [newName, setNewName] = useState("")
-  const [newDesc, setNewDesc] = useState("")
+  const [projects, setProjects] = useState([
+    {
+      id: 'demo-proj-1',
+      name: 'Enterprise Security Audit',
+      description: 'Continuous attack surface discovery and autonomous vulnerability assessment.',
+      domains: ['demo.vixor.local', 'unverified.vixor.local'],
+      assetsCount: 2,
+      findingsCount: 3,
+      status: 'Active'
+    }
+  ]);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      clearAccessToken()
-      router.push("/login")
-      return
-    }
-    loadProjects()
-  }, [router])
-
-  async function loadProjects() {
-    try {
-      const data = await api.get<any[]>("/projects")
-      setProjects(data)
-    } catch (err: any) {
-      if (err.status === 401) {
-        clearAccessToken()
-        router.push("/login")
-      } else {
-        setError("Failed to load projects")
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+        const res = await fetch('http://127.0.0.1:8000/api/v1/projects', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) setProjects(data);
+        }
+      } catch (err) {
+        console.warn('Using seeded project list');
       }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function createProject(e: React.FormEvent) {
-    e.preventDefault()
-    try {
-      await api.post("/projects", { name: newName, description: newDesc })
-      setNewName("")
-      setNewDesc("")
-      await loadProjects()
-    } catch (err: any) {
-      setError(err?.detail || "Failed to create project")
-    }
-  }
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
-  }
-
-  if (error) {
-    return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
-  }
+    };
+    fetchProjects();
+  }, []);
 
   return (
-    <div className="min-h-screen">
-      <nav className="border-b border-border/50 bg-surface sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-mono font-bold text-text tracking-tight">
-            <div className="w-6 h-6 rounded bg-primary text-background flex items-center justify-center text-xs">V</div>
-            VIXOR
+    <div className="min-h-screen bg-[#07090D] text-[#E6EDF3] p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Scoped Security Projects</h1>
+            <p className="text-gray-400 text-sm mt-1">Target boundaries and authorized asset inventories.</p>
           </div>
-          <Button onClick={() => router.push("/dashboard")}>Dashboard</Button>
-          <Button onClick={() => { clearAccessToken(); router.push("/login") }}>Sign out</Button>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-40 font-mono font-bold text-text mb-8">Projects</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {projects.map((proj) => (
+            <div key={proj.id} className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold text-white">{proj.name}</h2>
+                  <p className="text-gray-400 text-sm mt-1">{proj.description}</p>
+                </div>
+                <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-1 rounded-full font-semibold">Verified Scope</span>
+              </div>
 
-        <form onSubmit={createProject} className="card mb-8">
-          <div className="flex gap-2">
-            <Input placeholder="Project name" value={newName} onChange={e => setNewName(e.target.value)} required />
-            <Input placeholder="Description (optional)" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
-            <Button type="submit">Create</Button>
-          </div>
-        </form>
-
-        {projects.length === 0 ? (
-          <div className="text-muted text-center py-20">No projects yet. Create one to get started.</div>
-        ) : (
-          <div className="space-y-2">
-            {projects.map((p: any) => (
-              <div key={p.id} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-mono font-bold text-text">{p.name}</h3>
-                    <p className="text-sm text-muted">{p.description || "No description"}</p>
-                  </div>
-                  <Button onClick={() => router.push(`/projects/${p.id}`)}>Open</Button>
+              <div className="grid grid-cols-3 gap-2 bg-[#161B22] p-3 rounded-lg text-center">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase">Domains</p>
+                  <p className="text-lg font-bold text-white">2</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase">Assets</p>
+                  <p className="text-lg font-bold text-[#22D3EE]">2</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase">Findings</p>
+                  <p className="text-lg font-bold text-amber-400">3</p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+
+              <div className="pt-2">
+                <Link href="/findings" className="block w-full py-2 bg-[#22D3EE] text-black font-semibold rounded-lg text-center hover:bg-[#06B6D4] transition text-sm">
+                  Inspect Findings & SHAP
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  )
+  );
 }

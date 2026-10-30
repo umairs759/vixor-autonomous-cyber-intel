@@ -10,11 +10,11 @@ after revocation, the whole token family is revoked.
 """
 
 import hashlib
-import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
 import redis
+from jose import JWTError, jwt  # type: ignore[import-untyped]
 from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
@@ -53,6 +53,36 @@ class AuthService:
 
     def _hash_token(self, token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
+
+    def _create_refresh_token(self, user_id: str, token_jti: str) -> str:
+        secret = settings.JWT_SECRET_KEY
+        if secret is None:
+            raise ValueError("JWT_SECRET_KEY is not configured")
+        now = datetime.now(UTC)
+        return jwt.encode(
+            {
+                "sub": user_id,
+                "jti": token_jti,
+                "token_type": "refresh",
+                "iat": now,
+                "exp": now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+            },
+            secret,
+            algorithm=settings.JWT_ALGORITHM,
+        )
+
+    def _revoke_refresh_family(self, user_id: str) -> None:
+        user_key = f"user_refresh_tokens:{user_id}"
+        active_jtis = self.redis.smembers(user_key)
+        keys = [
+            self._refresh_token_key(
+                jti.decode("utf-8") if isinstance(jti, bytes) else str(jti)
+            )
+            for jti in active_jtis
+        ]
+        if keys:
+            self.redis.delete(*keys)
+        self.redis.delete(user_key)
 
     def authenticate_user(
         self,
@@ -174,9 +204,9 @@ class AuthService:
         with a TTL equal to the refresh token expiry.
         """
         access_jti = str(uuid.uuid4())
-        refresh_token = secrets.token_urlsafe(32)
-        refresh_token_hash = self._hash_token(refresh_token)
         refresh_jti = str(uuid.uuid4())
+        refresh_token = self._create_refresh_token(user.id, refresh_jti)
+        refresh_token_hash = self._hash_token(refresh_token)
 
         access_token = create_access_token(
             user_id=user.id,
@@ -229,6 +259,8 @@ class AuthService:
         # For MVP, we decode the JWT portion of the refresh token to get user_id
         try:
             payload = decode_access_token(refresh_token)
+            if payload.get("token_type") != "refresh":
+                raise JWTError("Not a refresh token")
             user_id = payload.get("sub")
             refresh_jti = payload.get("jti")
         except Exception:  # noqa: BLE001 - decode_access_token may raise various errors
@@ -251,9 +283,7 @@ class AuthService:
         stored_hash = self.redis.get(self._refresh_token_key(refresh_jti))
         if not stored_hash:
             # Token not found — possible reuse attack. Revoke all tokens for this user.
-            user_key = f"user_refresh_tokens:{user_id}"
-            self.redis.delete(user_key)
-            # Also delete all refresh token keys for this user (simplified)
+            self._revoke_refresh_family(user_id)
             write_audit_log(
                 self.db,
                 action="refresh_reuse_detected",
@@ -273,8 +303,7 @@ class AuthService:
             stored_hash_value = str(stored_hash)
         if not constant_time_compare(stored_hash_value, refresh_token_hash):
             # Hash mismatch — possible reuse attack
-            user_key = f"user_refresh_tokens:{user_id}"
-            self.redis.delete(user_key)
+            self._revoke_refresh_family(user_id)
             write_audit_log(
                 self.db,
                 action="refresh_reuse_detected",
@@ -305,9 +334,9 @@ class AuthService:
         )
 
         new_access_jti = str(uuid.uuid4())
-        new_refresh_token = secrets.token_urlsafe(32)
-        new_refresh_token_hash = self._hash_token(new_refresh_token)
         new_refresh_jti = str(uuid.uuid4())
+        new_refresh_token = self._create_refresh_token(user.id, new_refresh_jti)
+        new_refresh_token_hash = self._hash_token(new_refresh_token)
 
         new_access_token = create_access_token(
             user_id=user.id,
@@ -336,10 +365,33 @@ class AuthService:
     def logout(
         self,
         user_id: str | None,
+        refresh_token: str | None = None,
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> None:
         """Revoke refresh token on logout."""
+        if refresh_token:
+            try:
+                payload = decode_access_token(refresh_token)
+                token_jti = payload.get("jti")
+                token_user_id = payload.get("sub")
+                if user_id is None:
+                    user_id = token_user_id
+                if (
+                    payload.get("token_type") == "refresh"
+                    and token_user_id == user_id
+                    and token_jti
+                ):
+                    stored_hash = self.redis.get(self._refresh_token_key(token_jti))
+                    if isinstance(stored_hash, bytes):
+                        stored_hash = stored_hash.decode("utf-8")
+                    if stored_hash and constant_time_compare(
+                        str(stored_hash), self._hash_token(refresh_token)
+                    ):
+                        self.redis.delete(self._refresh_token_key(token_jti))
+                        self.redis.srem(f"user_refresh_tokens:{user_id}", token_jti)
+            except (JWTError, RedisError, ValueError):
+                logger.warning("refresh_token_revocation_failed", user_id=user_id)
         write_audit_log(
             self.db,
             action="logout",

@@ -1,0 +1,17 @@
+============================================================
+VIXOR VERIFICATION RESULTS
+Timestamp: 2026-10-30T17:29:45.044484
+============================================================
+
+  AUTH: FAIL - Expected 200, got 500
+  PROJECTS: FAIL - Expected 200, got 500
+  SCOPE_BARRIER: ERROR - 'str' object has no attribute 'get'
+  ASSETS: FAIL - Could not find at least 2 assets with tech stack
+  FINDINGS_XAI: ERROR - 0
+  CORRELATIONS: PASS
+  REPORTS: PASS
+  ADMIN_AUDIT: PASS
+
+============================================================
+OVERALL: SOME TESTS FAILED
+============================================================

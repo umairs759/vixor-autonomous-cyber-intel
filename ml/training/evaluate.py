@@ -6,9 +6,9 @@ import json
 import os
 
 try:
-    from .train_models import load_data, train_and_evaluate
-except Exception:  # pragma: no cover - script execution fallback
-    from train_models import load_data, train_and_evaluate  # type: ignore[import-not-found]
+    from .train_models import train_and_evaluate
+except ImportError:  # pragma: no cover - script execution fallback
+    from train_models import train_and_evaluate  # type: ignore[import-not-found]
 
 ARTIFACT_DIR = os.path.join(os.path.dirname(__file__), "..", "artifacts")
 
@@ -25,4 +25,3 @@ def evaluate() -> dict:
 if __name__ == "__main__":
     report = evaluate()
     print(json.dumps(report.get("results", {}), indent=2))
-PY

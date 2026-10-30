@@ -20,6 +20,7 @@ class ScanStatus(str, enum.Enum):
     partial = "partial"
     completed = "completed"
     failed = "failed"
+    cancelled = "cancelled"
 
 
 class Scan(Base, TimestampMixin):

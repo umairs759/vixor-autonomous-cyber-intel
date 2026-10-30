@@ -7,7 +7,7 @@ under ml/artifacts/. No LLM is used anywhere in training or scoring.
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import joblib
 import numpy as np
@@ -86,7 +86,7 @@ def train_and_evaluate() -> dict:
         "model_path": model_path,
         "feature_names": feature_names,
         "class_names": CLASS_NAMES,
-        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "trained_at": datetime.now(UTC).isoformat(),
         "results": results,
         "labeling_strategy": (
             "Weak supervision: blend of CISA KEV, EPSS percentile, CVSS, "
@@ -102,8 +102,8 @@ def train_and_evaluate() -> dict:
         json.dump(metadata, fh, indent=2)
 
     # Save a copy under each version name for the scoring service to load
-    for name in models:
-        joblib.dump(models[name], os.path.join(ARTIFACT_DIR, f"{name}.joblib"))
+    for name, model in models.items():
+        joblib.dump(model, os.path.join(ARTIFACT_DIR, f"{name}.joblib"))
 
     print(f"Best model: {best_name} (macro F1={best_f1:.4f})")
     print(f"Artifacts saved to {ARTIFACT_DIR}")

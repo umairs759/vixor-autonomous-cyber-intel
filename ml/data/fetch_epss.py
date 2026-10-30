@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
 EPSS_API_URL = "https://api.first.org/data/v1/epss"
@@ -45,4 +43,3 @@ def fetch_epss(
             except (TypeError, ValueError):
                 continue
     return result
-PY

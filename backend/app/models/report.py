@@ -24,6 +24,9 @@ class Report(Base, TimestampMixin):
         UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, index=True
     )
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
+    title: Mapped[str] = mapped_column(String(512), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
+    format: Mapped[str] = mapped_column(String(50), nullable=False, default="PDF")
 
     scan: Mapped["Scan"] = relationship("Scan", back_populates="report")
     generated_by_user: Mapped["User"] = relationship(
@@ -31,7 +34,7 @@ class Report(Base, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<Report(id={self.id}, scan_id={self.scan_id})>"
+        return f"<Report(id={self.id}, scan_id={self.scan_id}, title={self.title})>"
 
 
 # Import all forward-referenced models to resolve relationship string names

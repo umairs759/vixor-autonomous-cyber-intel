@@ -7,6 +7,7 @@ Tests cover:
 """
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 
 class TestSecurityHeaders:
@@ -56,6 +57,62 @@ class TestCORS:
         )
         allow_methods = response.headers.get("access-control-allow-methods", "")
         assert "GET" in allow_methods
+
+    def test_login_preflight_allows_loopback_origin_and_frontend_headers(
+        self, client: TestClient
+    ):
+        """The frontend's JSON login preflight is allowed on the loopback origin."""
+        origin = "http://127.0.0.1:3000"
+        response = client.options(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type,authorization",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.headers.get("access-control-allow-origin") == origin
+        methods = {
+            method.strip().upper()
+            for method in response.headers.get("access-control-allow-methods", "").split(",")
+        }
+        assert "POST" in methods
+        allowed_headers = {
+            header.strip().lower()
+            for header in response.headers.get("access-control-allow-headers", "").split(",")
+        }
+        assert {"content-type", "authorization"}.issubset(allowed_headers)
+        assert response.headers.get("access-control-allow-credentials") == "true"
+
+    def test_cors_disallowed_origin_receives_no_permission(self, client: TestClient):
+        response = client.options(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": "http://not-allowed.example",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "access-control-allow-origin" not in response.headers
+
+    def test_invalid_login_behavior_is_unchanged_with_cors(
+        self, client: TestClient, db_session: Session
+    ):
+        assert db_session.get_bind() is not None
+        origin = "http://127.0.0.1:3000"
+        response = client.post(
+            "/api/v1/auth/login",
+            headers={"Origin": origin},
+            json={"email": "cors-missing-user@example.com", "password": "not-valid"},
+        )
+
+        assert response.status_code == 401
+        assert response.headers.get("access-control-allow-origin") == origin
+        assert response.headers.get("access-control-allow-credentials") == "true"
 
 
 class TestRequestSizeLimit:

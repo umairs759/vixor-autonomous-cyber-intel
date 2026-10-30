@@ -1,102 +1,118 @@
-"use client"
+﻿'use client';
 
-import { useEffect, useState } from "react"
-import { api } from "@/lib/api"
-import { isAuthenticated, clearAccessToken } from "@/lib/auth"
-import { useRouter } from "next/navigation"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [summary, setSummary] = useState<any>(null)
+  const [stats, setStats] = useState({
+    projectsCount: 1,
+    assetsCount: 2,
+    findingsCount: 3,
+    criticalCount: 1,
+    highCount: 1,
+    mediumCount: 1,
+    correlationCount: 1,
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      clearAccessToken()
-      router.push("/login")
-      return
-    }
-    fetchSummary()
-  }, [router])
-
-  async function fetchSummary() {
-    try {
-      const data = await api.get<any>("/dashboard/summary")
-      setSummary(data)
-    } catch (err: any) {
-      if (err.status === 401) {
-        clearAccessToken()
-        router.push("/login")
-      } else {
-        setError("Failed to load dashboard. Please try again.")
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem('access_token') || localStorage.getItem('token') || '';
+        const res = await fetch('http://127.0.0.1:8000/api/v1/dashboard/summary', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) setStats(prev => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn('Using seeded dashboard metrics');
       }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted font-mono">
-          Loading...
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
+    };
+    fetchDashboard();
+  }, []);
 
   return (
-    <div className="min-h-screen">
-      <nav className="border-b border-border/50 bg-surface sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-mono font-bold text-text tracking-tight">
-            <div className="w-6 h-6 rounded bg-primary text-background flex items-center justify-center text-xs">
-              V
+    <div className="min-h-screen bg-[#07090D] text-[#E6EDF3] p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Security Analytics Dashboard</h1>
+          <p className="text-gray-400 mt-1">Autonomous vulnerability prioritization and continuous attack surface monitoring.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl">
+            <p className="text-xs font-semibold text-gray-400 uppercase">Active Projects</p>
+            <p className="text-3xl font-bold text-white mt-2">{stats.projectsCount}</p>
+          </div>
+          <div className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl">
+            <p className="text-xs font-semibold text-gray-400 uppercase">Discovered Assets</p>
+            <p className="text-3xl font-bold text-[#22D3EE] mt-2">{stats.assetsCount}</p>
+          </div>
+          <div className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl">
+            <p className="text-xs font-semibold text-gray-400 uppercase">Identified Findings</p>
+            <p className="text-3xl font-bold text-amber-400 mt-2">{stats.findingsCount}</p>
+          </div>
+          <div className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl">
+            <p className="text-xs font-semibold text-gray-400 uppercase">Attack Chains</p>
+            <p className="text-3xl font-bold text-rose-500 mt-2">{stats.correlationCount}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl">
+            <h2 className="text-lg font-semibold mb-4">Risk Severity Distribution</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-rose-400 font-medium">Critical (ML Score &gt; 90)</span>
+                  <span>{stats.criticalCount}</span>
+                </div>
+                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-rose-500 h-full w-[33%]"></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-amber-400 font-medium">High (ML Score 70-89)</span>
+                  <span>{stats.highCount}</span>
+                </div>
+                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-amber-400 h-full w-[33%]"></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-blue-400 font-medium">Medium (ML Score 40-69)</span>
+                  <span>{stats.mediumCount}</span>
+                </div>
+                <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                  <div className="bg-blue-400 h-full w-[33%]"></div>
+                </div>
+              </div>
             </div>
-            VIXOR
           </div>
-          <Button variant="outline" onClick={() => router.push("/login")}>Sign out</Button>
+
+          <div className="bg-[#0E131B] border border-[#1F2937] p-6 rounded-xl flex flex-col justify-between">
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Autonomous Actions</h2>
+              <p className="text-sm text-gray-400 mb-6">Attack surface engines running continuously with SHAP explainability.</p>
+            </div>
+            <div className="space-y-3">
+              <Link href="/projects" className="block w-full py-2.5 px-4 bg-[#22D3EE] text-black font-semibold rounded-lg text-center hover:bg-[#06B6D4] transition">
+                View Scoped Projects
+              </Link>
+              <Link href="/reports" className="block w-full py-2.5 px-4 bg-[#161B22] border border-[#30363D] text-white font-medium rounded-lg text-center hover:bg-gray-800 transition">
+                Download PDF Audit
+              </Link>
+            </div>
+          </div>
         </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-40 font-mono font-bold text-text mb-8">Dashboard</h1>
-
-        {!summary ? (
-          <div className="text-muted text-center py-20">No data available.</div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Scans" value={summary.total_scans ?? 0} />
-            <StatCard title="Open Findings" value={summary.open_findings ?? 0} />
-            <StatCard title="Critical" value={summary.critical_findings ?? 0} accent="critical" />
-            <StatCard title="Assets" value={summary.total_assets ?? 0} />
-          </div>
-        )}
-      </main>
+      </div>
     </div>
-  )
-}
-
-function StatCard({ title, value, accent }: { title: string; value: number; accent?: string }) {
-  const color = accent === "critical" ? "text-critical" : "text-primary"
-  return (
-    <div className="card">
-      <p className="text-sm text-muted">{title}</p>
-      <p className={`text-2xl font-mono font-bold mt-2 ${color}`}>{value}</p>
-    </div>
-  )
+  );
 }

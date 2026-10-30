@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -79,7 +79,7 @@ def save_nvd_json(records: list[dict[str, Any]], path: str) -> None:
 
 
 if __name__ == "__main__":
-    end = datetime.now(timezone.utc)
+    end = datetime.now(UTC)
     start = end - timedelta(days=7)
     records = fetch_nvd(
         start_date=start.strftime("%Y-%m-%d"),
@@ -88,4 +88,3 @@ if __name__ == "__main__":
     out = os.path.join(os.path.dirname(__file__), "raw", "nvd_recent.json")
     save_nvd_json(records, out)
     print(f"Fetched {len(records)} CVEs -> {out}")
-PY

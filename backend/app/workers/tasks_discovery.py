@@ -6,6 +6,7 @@ enforcement. Partial failures are handled gracefully.
 """
 
 import json
+from datetime import UTC, datetime
 from typing import Any
 
 from app.core.logging import get_logger
@@ -73,6 +74,16 @@ def run_discovery(  # type: ignore[no-untyped-def]
                 "error": f"domain not verified (status: {domain.status.value})",
             }
 
+        domain_in_scope, scope_reason = is_in_scope(
+            domain, domain.root_domain, resolve_dns=False
+        )
+        if not domain_in_scope:
+            return {
+                "domain_id": domain_id,
+                "status": "failed",
+                "error": scope_reason or "domain verification is stale",
+            }
+
         root_domain = domain.root_domain
 
         _publish_progress(
@@ -138,10 +149,11 @@ def run_discovery(  # type: ignore[no-untyped-def]
 
         # Step 5: httpx probe for live hosts
         assets_created = 0
+        assets_updated = 0
         for hostname, ips in dns_results.items():
             try:
                 # scope_guard enforcement
-                in_scope, reason = is_in_scope(domain, hostname, resolve_dns=False)
+                in_scope, reason = is_in_scope(domain, hostname, resolve_dns=True)
                 if not in_scope:
                     logger.warning(
                         "asset_out_of_scope",
@@ -173,7 +185,8 @@ def run_discovery(  # type: ignore[no-untyped-def]
                     existing.scope_status = ScopeStatus.in_scope
                     existing.scope_reason = None
                     existing.technologies = probe_result.get("technologies")
-                    existing.last_seen = None  # Will be set by TimestampMixin
+                    existing.last_seen = datetime.now(UTC)
+                    assets_updated += 1
                 else:
                     # Create new asset
                     asset = Asset(
@@ -204,6 +217,7 @@ def run_discovery(  # type: ignore[no-untyped-def]
             {
                 "status": "completed",
                 "assets_created": assets_created,
+                "assets_updated": assets_updated,
                 "wildcard_detected": wildcard_detected,
             },
         )
@@ -213,6 +227,7 @@ def run_discovery(  # type: ignore[no-untyped-def]
             "root_domain": root_domain,
             "subdomains_found": len(scoped_subdomains),
             "assets_created": assets_created,
+            "assets_updated": assets_updated,
             "wildcard_detected": wildcard_detected,
             "status": "completed",
         }

@@ -175,12 +175,13 @@ class TestRunDiscovery:
         db = _make_db_session(domain)
         mock_get_session.return_value.return_value = db
 
-        mock_subfinder.return_value = ["evil.com"]
+        mock_subfinder.return_value = ["sub1.example.com"]
         mock_ct.return_value = []
         mock_enum_dns.return_value = {
+            "sub1.example.com": ["10.0.0.4"],
             "_wildcard_detected": False,
         }
-        mock_is_in_scope.return_value = (False, "out of scope")
+        mock_is_in_scope.side_effect = [(True, None), (False, "out of scope")]
 
         result = run_discovery("domain-1")
 
